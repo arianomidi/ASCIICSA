@@ -18,8 +18,13 @@ gscale1 = "$@B%8&WM#*oahkbdpqwmZO0QLCJUYXzcvunxrjft/\|()1{}[]?-_+~<>i!lI;:,\"^`'
 gscale2 = '@%#*+=-:. '
 
 # color codes
-# colors = [ '\033[38;5;255m', '\033[38;5;248m', '\033[38;5;241m' ]
-colors = [ '\033[38;5;255m', '\033[38;5;250m', '\033[38;5;244m', '\033[38;5;238m', '\033[38;5;232m']
+# colors = [ '\033[0m']
+# colors = [ '\033[37m', '\033[33m', '\033[31m', '\033[34m', '\033[0m']     # white, yellow, red, blue
+# colors = [ '\033[37m', '\033[94m', '\033[35m', '\033[34m', '\033[0m']   # cool - white, light blue, magenta, blue
+
+# colors = [ '\033[97m', '\033[37m', '\033[90m', '\033[0m'] # 16bit grayscale
+# colors = [ '\033[38;5;255m', '\033[38;5;248m', '\033[38;5;241m', '\033[0m']   # grayscale 1
+colors = [ '\033[38;5;255m', '\033[38;5;250m', '\033[38;5;244m', '\033[38;5;239m', '\033[38;5;235m', '\033[0m' ] # grayscale 2
 
 def normalizeImage():
     """
@@ -147,8 +152,10 @@ def covertImageToAscii(fileName, cols, scale, moreLevels, invertImg):
     
     # normalize tile value array
     min_val = np.percentile(tiles, 0)
-    max_val = np.percentile(tiles, 100)
+    max_val = np.percentile(tiles, 40)
     tiles = np.clip(tiles, min_val, max_val)
+    
+    print(tiles.min(), tiles.max())
 
     # min_val = 0
     # max_val = 255
@@ -165,30 +172,30 @@ def covertImageToAscii(fileName, cols, scale, moreLevels, invertImg):
         
         for i in range(cols):
             # todo: add command
-            gsval = colors[round((len(colors)-1) * normal_tiles[j][i])]
+            color_index = int((len(colors)-1) * normal_tiles[j][i])
+            gsval = colors[color_index]
             
             # look up ascii char
+            # min_val = color_index / (len(colors) - 1)
+            # max_val = (color_index + 1) / (len(colors) - 1)
+            # char_ratio = (normal_tiles[j][i] - min_val) / (max_val - min_val)
+            # # if (normal_tiles[j][i] == 1):
+            # #     char_ratio = 1
+            char_ratio = normal_tiles[j][i]
+            # print("norm: %.2f, char_ratio: %.2f, color_index: %.2f, min_val: %.2f, max_val: %.2f" % (normal_tiles[j][i], char_ratio, color_index, min_val, max_val))
             if moreLevels:
-                gsval += gscale1[int(69 * normal_tiles[j][i])]
+                gsval += gscale1[int(69 * char_ratio)]
             else:
-                gsval += gscale2[int(9 * normal_tiles[j][i])]
+                gsval += gscale2[int(9 * char_ratio)]
                 
             gsval += '\033[0m'
+            
   
             # append ascii char to string
             aimg[j] += gsval
       
     # return txt image
     return aimg
-
-def prRed(skk): print("\033[91m{}\033[00m" .format(skk))
-def prGreen(skk): print("\033[92m{}\033[00m" .format(skk))
-def prYellow(skk): print("\033[93m{}\033[00m" .format(skk))
-def prLightPurple(skk): print("\033[94m{}\033[00m" .format(skk))
-def prPurple(skk): print("\033[95m{}\033[00m" .format(skk))
-def prCyan(skk): print("\033[96m{}\033[00m" .format(skk))
-def prLightGray(skk): print("\033[97m{}\033[00m" .format(skk))
-def prBlack(skk): print("\033[98m{}\033[00m" .format(skk))
 
 
 # main() function
