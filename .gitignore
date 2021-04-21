@@ -5,5 +5,7 @@
 
 venv/
 __pycache__/
+
 test/ 
 data/
+out.txt
