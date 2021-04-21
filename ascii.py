@@ -6,7 +6,7 @@ from scipy import ndimage
 import math
 import matplotlib.pyplot as plt
   
-from PIL import Image, ImageFilter
+from PIL import Image, ImageFilter, ImageFont, ImageDraw, ImageOps
   
 # gray scale level values from: 
 # http://paulbourke.net/dataformats/asciiart/
@@ -22,9 +22,9 @@ gscale2 = '@%#*+=-:. '
 # colors = [ '\033[37m', '\033[33m', '\033[31m', '\033[34m', '\033[0m']     # white, yellow, red, blue
 # colors = [ '\033[37m', '\033[94m', '\033[35m', '\033[34m', '\033[0m']   # cool - white, light blue, magenta, blue
 
-# colors = [ '\033[97m', '\033[37m', '\033[90m', '\033[0m'] # 16bit grayscale
+colors = [ '\033[97m', '\033[37m', '\033[90m', '\033[0m'] # 16bit grayscale
 # colors = [ '\033[38;5;255m', '\033[38;5;248m', '\033[38;5;241m', '\033[0m']   # grayscale 1
-colors = [ '\033[38;5;255m', '\033[38;5;250m', '\033[38;5;244m', '\033[38;5;239m', '\033[38;5;235m', '\033[0m' ] # grayscale 2
+# colors = [ '\033[38;5;255m', '\033[38;5;250m', '\033[38;5;244m', '\033[38;5;239m', '\033[38;5;235m', '\033[0m' ] # grayscale 2
 
 def normalizeImage():
     """
@@ -152,7 +152,7 @@ def covertImageToAscii(fileName, cols, scale, moreLevels, invertImg):
     
     # normalize tile value array
     min_val = np.percentile(tiles, 0)
-    max_val = np.percentile(tiles, 40)
+    max_val = np.percentile(tiles, 80)
     tiles = np.clip(tiles, min_val, max_val)
     
     print(tiles.min(), tiles.max())
@@ -172,8 +172,8 @@ def covertImageToAscii(fileName, cols, scale, moreLevels, invertImg):
         
         for i in range(cols):
             # todo: add command
-            color_index = int((len(colors)-1) * normal_tiles[j][i])
-            gsval = colors[color_index]
+            # color_index = int((len(colors)-1) * normal_tiles[j][i])
+            # gsval = colors[color_index]
             
             # look up ascii char
             # min_val = color_index / (len(colors) - 1)
@@ -181,14 +181,16 @@ def covertImageToAscii(fileName, cols, scale, moreLevels, invertImg):
             # char_ratio = (normal_tiles[j][i] - min_val) / (max_val - min_val)
             # # if (normal_tiles[j][i] == 1):
             # #     char_ratio = 1
-            char_ratio = normal_tiles[j][i]
             # print("norm: %.2f, char_ratio: %.2f, color_index: %.2f, min_val: %.2f, max_val: %.2f" % (normal_tiles[j][i], char_ratio, color_index, min_val, max_val))
+            gsval = ""
+            char_ratio = normal_tiles[j][i]
+            
             if moreLevels:
                 gsval += gscale1[int(69 * char_ratio)]
             else:
                 gsval += gscale2[int(9 * char_ratio)]
                 
-            gsval += '\033[0m'
+            # gsval += '\033[0m'
             
   
             # append ascii char to string
@@ -197,6 +199,68 @@ def covertImageToAscii(fileName, cols, scale, moreLevels, invertImg):
     # return txt image
     return aimg
 
+
+# --------- TODO: refactor -------------- #
+
+PIXEL_ON = 0  # PIL color to use for "on"
+PIXEL_OFF = 255  # PIL color to use for "off"
+
+def text_image(text_path, inverted, font_path=None):
+    """Convert text file to a grayscale image with black characters on a white background.
+
+    arguments:
+    text_path - the content of this file will be converted to an image
+    font_path - path to a font file (for example impact.ttf)
+    """
+    grayscale = 'L'
+    # parse the file into lines
+    with open(text_path) as text_file:  # can throw FileNotFoundError
+        lines = tuple(l.rstrip() for l in text_file.readlines())
+
+    # choose a font (you can see more detail in my library on github)
+    large_font = 20  # get better resolution with larger size
+    font_path = font_path or 'fonts/SFMono-Semibold.otf'  # Courier New. works in windows. linux may need more explicit path
+    try:
+        font = ImageFont.truetype(font_path, size=large_font)
+    except IOError:
+        font = ImageFont.load_default()
+        print('Could not use chosen font. Using default.')
+
+    # make the background image based on the combination of font and lines
+    pt2px = lambda pt: int(round(pt * 96.0 / 72))   # function that converts points to pixels
+    max_width_line = max(lines, key=lambda s: font.getsize(s)[0])   # get line with largest width
+    # max height is adjusted down because it's too large visually for spacing
+    test_string = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+    max_height = pt2px(font.getsize(test_string)[1])
+    max_width = pt2px(font.getsize(max_width_line)[0])
+    char_width = round(max_width / len(max_width_line))
+    height = max_height * len(lines)  # perfect or a little oversized
+    width = int(max_width + 4)  # a little oversized
+    image = Image.new(grayscale, (width, height), color=PIXEL_OFF)
+    draw = ImageDraw.Draw(image)
+
+    # draw each line of text
+    vertical_position = 2
+    horizontal_position = 4
+    line_spacing = int(round(max_height * 0.85))  # reduced spacing seems better
+    # line_spacing = max_height
+    char_spacing = round(char_width * 0.75)
+    for line in lines:
+        hor_pos = horizontal_position
+        for c in line:
+            draw.text((hor_pos, vertical_position),
+                    c, fill=PIXEL_ON, font=font)
+            hor_pos += char_spacing 
+        # draw.text((horizontal_position, vertical_position), line, fill=PIXEL_ON, font=font)
+        vertical_position += line_spacing
+    # crop the text
+    c_box = ImageOps.invert(image).getbbox()
+    # c_box = image.getbbox()
+    image = image.crop(c_box)
+    image = ImageOps.invert(image)
+    return image
+
+# ---------------------------------------- #
 
 # main() function
 def main():
@@ -251,6 +315,13 @@ def main():
     # cleanup
     f.close()
     print("ASCII art written to %s" % outFile)
+    
+    start = time.perf_counter()
+    image = text_image(outFile, args.invert)
+    image.show()
+    end = time.perf_counter()
+    print(f"Completed {end - start:0.4f} seconds")
+    # image.save('content.png')
   
 # call main
 if __name__ == '__main__':
