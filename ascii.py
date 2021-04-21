@@ -18,7 +18,8 @@ gscale1 = "$@B%8&WM#*oahkbdpqwmZO0QLCJUYXzcvunxrjft/\|()1{}[]?-_+~<>i!lI;:,\"^`'
 gscale2 = '@%#*+=-:. '
 
 # color codes
-colors = [ '\033[38;5;255m', '\033[38;5;248m', '\033[38;5;244m' ]
+# colors = [ '\033[38;5;255m', '\033[38;5;248m', '\033[38;5;241m' ]
+colors = [ '\033[38;5;255m', '\033[38;5;250m', '\033[38;5;244m', '\033[38;5;238m', '\033[38;5;232m']
 
 def normalizeImage():
     """
@@ -164,7 +165,7 @@ def covertImageToAscii(fileName, cols, scale, moreLevels, invertImg):
         
         for i in range(cols):
             # todo: add command
-            gsval = colors[round(2 * normal_tiles[j][i])]
+            gsval = colors[round((len(colors)-1) * normal_tiles[j][i])]
             
             # look up ascii char
             if moreLevels:
