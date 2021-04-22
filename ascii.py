@@ -7,6 +7,8 @@ import math
 import matplotlib.pyplot as plt
   
 from PIL import Image, ImageFilter, ImageFont, ImageDraw, ImageOps
+
+from ansi import *
   
 # gray scale level values from: 
 # http://paulbourke.net/dataformats/asciiart/
@@ -19,10 +21,10 @@ gscale2 = '@%#*+=-:. '
 
 # color codes
 # colors = [ '\033[0m']
-# colors = [ '\033[37m', '\033[33m', '\033[31m', '\033[34m', '\033[0m']     # white, yellow, red, blue
-# colors = [ '\033[37m', '\033[94m', '\033[35m', '\033[34m', '\033[0m']   # cool - white, light blue, magenta, blue
+colors = [ '\033[37m', '\033[33m', '\033[31m', '\033[34m', '\033[0m']     # white, yellow, red, blue
+# colors = [ '\033[37m', '\033[95m', '\033[35m', '\033[34m', '\033[0m']   # cool - white, light blue, magenta, blue
 
-colors = [ '\033[97m', '\033[37m', '\033[90m', '\033[0m'] # 16bit grayscale
+# colors = [ '\033[97m', '\033[37m', '\033[90m', '\033[0m'] # 16bit grayscale
 # colors = [ '\033[38;5;255m', '\033[38;5;248m', '\033[38;5;241m', '\033[0m']   # grayscale 1
 # colors = [ '\033[38;5;255m', '\033[38;5;250m', '\033[38;5;244m', '\033[38;5;239m', '\033[38;5;235m', '\033[0m' ] # grayscale 2
 
@@ -165,15 +167,18 @@ def covertImageToAscii(fileName, cols, scale, moreLevels, invertImg):
   
     # ascii image is a list of character strings
     aimg = []
+    # color image is a list of ansi color codes strings
+    cimg = []
     # generate list of dimensions
     for j in range(rows):
         # append an empty string
         aimg.append("")
+        cimg.append([])
         
         for i in range(cols):
             # todo: add command
-            # color_index = int((len(colors)-1) * normal_tiles[j][i])
-            # gsval = colors[color_index]
+            color_index = int((len(colors)-1) * normal_tiles[j][i])
+            cimg[j].append(colors[color_index])
             
             # look up ascii char
             # min_val = color_index / (len(colors) - 1)
@@ -182,44 +187,48 @@ def covertImageToAscii(fileName, cols, scale, moreLevels, invertImg):
             # # if (normal_tiles[j][i] == 1):
             # #     char_ratio = 1
             # print("norm: %.2f, char_ratio: %.2f, color_index: %.2f, min_val: %.2f, max_val: %.2f" % (normal_tiles[j][i], char_ratio, color_index, min_val, max_val))
+            
             gsval = ""
             char_ratio = normal_tiles[j][i]
             
             if moreLevels:
                 gsval += gscale1[int(69 * char_ratio)]
             else:
-                gsval += gscale2[int(9 * char_ratio)]
-                
-            # gsval += '\033[0m'
-            
+                gsval += gscale2[int(9 * char_ratio)]            
   
             # append ascii char to string
             aimg[j] += gsval
-      
+    
     # return txt image
-    return aimg
+    return aimg, cimg
 
 
 # --------- TODO: refactor -------------- #
 
-PIXEL_ON = 0  # PIL color to use for "on"
-PIXEL_OFF = 255  # PIL color to use for "off"
+PIXEL_ON = "#000000"  # PIL color to use for "on"
+PIXEL_OFF = '#1c1c1c'  # PIL color to use for "off"
 
-def text_image(text_path, inverted, font_path=None):
+BACKGROUND_COLOR = "#1c1c1c"
+WIDTH_SCALING_FACTOR = 0.75
+HEIGHT_SCALING_FACTOR = 0.84
+
+
+def text_image(aimg, cimg, inverted, font_path=None):
     """Convert text file to a grayscale image with black characters on a white background.
 
     arguments:
     text_path - the content of this file will be converted to an image
     font_path - path to a font file (for example impact.ttf)
     """
-    grayscale = 'L'
-    # parse the file into lines
-    with open(text_path) as text_file:  # can throw FileNotFoundError
-        lines = tuple(l.rstrip() for l in text_file.readlines())
-
+    
+    # # parse the file into lines
+    # with open(text_path) as text_file:  # can throw FileNotFoundError
+    #     lines = tuple(l.rstrip() for l in text_file.readlines())
+    lines = aimg
+    
     # choose a font (you can see more detail in my library on github)
     large_font = 20  # get better resolution with larger size
-    font_path = font_path or 'fonts/SFMono-Semibold.otf'  # Courier New. works in windows. linux may need more explicit path
+    font_path = font_path or 'fonts/SFMono-Medium.otf'  # Courier New. works in windows. linux may need more explicit path
     try:
         font = ImageFont.truetype(font_path, size=large_font)
     except IOError:
@@ -234,30 +243,26 @@ def text_image(text_path, inverted, font_path=None):
     max_height = pt2px(font.getsize(test_string)[1])
     max_width = pt2px(font.getsize(max_width_line)[0])
     char_width = round(max_width / len(max_width_line))
-    height = max_height * len(lines)  # perfect or a little oversized
-    width = int(max_width + 4)  # a little oversized
-    image = Image.new(grayscale, (width, height), color=PIXEL_OFF)
+    height = int(max_height * len(lines) * HEIGHT_SCALING_FACTOR) # perfect or a little oversized
+    width = int(max_width * WIDTH_SCALING_FACTOR) # a little oversized
+    image = Image.new("RGB", (width, height), color=background_color(inverted))
     draw = ImageDraw.Draw(image)
 
     # draw each line of text
-    vertical_position = 2
-    horizontal_position = 4
-    line_spacing = int(round(max_height * 0.85))  # reduced spacing seems better
-    # line_spacing = max_height
-    char_spacing = round(char_width * 0.75)
-    for line in lines:
+    vertical_position = 0
+    horizontal_position = 0
+    line_spacing = round(max_height * HEIGHT_SCALING_FACTOR)  # reduced spacing seems better
+    char_spacing = round(char_width * WIDTH_SCALING_FACTOR)
+    
+    for line, line_colors in zip(lines, cimg):
         hor_pos = horizontal_position
-        for c in line:
+        for c, color in zip(line, line_colors):
+            rbg_color = ansi_rgb(color)
             draw.text((hor_pos, vertical_position),
-                    c, fill=PIXEL_ON, font=font)
+                    c, fill=rbg_color, font=font)
             hor_pos += char_spacing 
-        # draw.text((horizontal_position, vertical_position), line, fill=PIXEL_ON, font=font)
         vertical_position += line_spacing
-    # crop the text
-    c_box = ImageOps.invert(image).getbbox()
-    # c_box = image.getbbox()
-    image = image.crop(c_box)
-    image = ImageOps.invert(image)
+    
     return image
 
 # ---------------------------------------- #
@@ -300,7 +305,7 @@ def main():
     
     start = time.perf_counter()
     # convert image to ascii txt
-    aimg = covertImageToAscii(imgFile, cols, scale, args.moreLevels, args.invert)
+    aimg, cimg = covertImageToAscii(imgFile, cols, scale, args.moreLevels, args.invert)
     end = time.perf_counter()
     print(f"Completed {end - start:0.4f} seconds")
   
@@ -308,20 +313,29 @@ def main():
     f = open(outFile, 'w')
   
     # write to file
-    for row in aimg:
-        print(row)
-        f.write(row + '\n')
-  
+    for i in range(len(aimg)):
+        for j in range(len(aimg[0])):
+            f.write(cimg[i][j] + aimg[i][j])
+        f.write("\n")
+        
+    f.write("\033[0m")
     # cleanup
     f.close()
-    print("ASCII art written to %s" % outFile)
     
+    # show output
+    f = open(outFile, 'r')
+    print(f.read())
+    f.close()
+  
+    
+    print("ASCII art written to %s" % outFile)
     start = time.perf_counter()
-    image = text_image(outFile, args.invert)
+    image = text_image(aimg, cimg, args.invert)
     image.show()
     end = time.perf_counter()
+    # image.save('out/male_bilo3_rgb.png')
     print(f"Completed {end - start:0.4f} seconds")
-    # image.save('content.png')
+    
   
 # call main
 if __name__ == '__main__':
