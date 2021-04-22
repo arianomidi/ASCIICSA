@@ -19,14 +19,16 @@ gscale1 = "$@B%8&WM#*oahkbdpqwmZO0QLCJUYXzcvunxrjft/\|()1{}[]?-_+~<>i!lI;:,\"^`'
 # 10 levels of gray
 gscale2 = '@%#*+=-:. '
 
-# color codes
-# colors = [ '\033[0m']
-colors = [ '\033[37m', '\033[33m', '\033[31m', '\033[34m', '\033[0m']     # white, yellow, red, blue
-# colors = [ '\033[37m', '\033[95m', '\033[35m', '\033[34m', '\033[0m']   # cool - white, light blue, magenta, blue
-
-# colors = [ '\033[97m', '\033[37m', '\033[90m', '\033[0m'] # 16bit grayscale
-# colors = [ '\033[38;5;255m', '\033[38;5;248m', '\033[38;5;241m', '\033[0m']   # grayscale 1
-# colors = [ '\033[38;5;255m', '\033[38;5;250m', '\033[38;5;244m', '\033[38;5;239m', '\033[38;5;235m', '\033[0m' ] # grayscale 2
+# color codes schemes
+color_schemes = {
+    'binary' : [ '\033[37m'],
+    'grayscale_4b' : [ '\033[97m', '\033[37m', '\033[90m', '\033[0m'],
+    'grayscale_3' : [ '\033[38;5;255m', '\033[38;5;248m', '\033[38;5;241m', '\033[0m'],
+    'grayscale_5' : [ '\033[38;5;255m', '\033[38;5;250m', '\033[38;5;244m', '\033[38;5;239m', '\033[38;5;235m', '\033[0m' ],
+    
+    'rgb_colorful' : [ '\033[37m', '\033[33m', '\033[31m', '\033[34m', '\033[0m'],
+    'rgb_cool' : [ '\033[37m', '\033[95m', '\033[35m', '\033[34m', '\033[0m']
+}
 
 def normalizeImage():
     """
@@ -44,7 +46,7 @@ def normalizeImage():
 def filterImage(image):
     return image.filter(ImageFilter.EDGE_ENHANCE_MORE)
   
-def covertImageToAscii(fileName, cols, scale, moreLevels, invertImg):
+def covertImageToAscii(fileName, colors, cols, scale, moreLevels, invertImg):
     
     """
     Given Image and dims (rows, cols) returns an m*n list of Images 
@@ -273,22 +275,35 @@ def main():
     descStr = "This program converts an image into ASCII art."
     parser = argparse.ArgumentParser(description=descStr)
     # add expected arguments
-    parser.add_argument('--file', dest='imgFile', required=True)
-    parser.add_argument('--scale', dest='scale', required=False)
-    parser.add_argument('--out', dest='outFile', required=False)
-    parser.add_argument('--cols', dest='cols', required=False)
-    parser.add_argument('--morelevels',dest='moreLevels',action='store_true')
-    parser.add_argument('--invert',dest='invert',action='store_true')
-  
+    parser.add_argument('imgFile')
+    
+    parser.add_argument('-c', '--colors', dest='colorScheme', type=int, choices=[0, 1, 2, 3, 10, 11])
+    parser.add_argument('-n', '--cols', dest='cols', type=int, required=False)
+    parser.add_argument('-l', '--scale', dest='scale', type=float, required=False)
+    parser.add_argument('-m', '--morelevels', dest='moreLevels', action='store_true')
+    parser.add_argument('-i', '--invert', dest='inverted', action='store_true')
+    
+    parser.add_argument('-o', '--out', dest='outFile', required=False)
+    parser.add_argument('-O', '--imgout', dest='imgOutFile', required=False)
+    parser.add_argument('-H', '--hide', dest='hide', action='store_true')
+    parser.add_argument('-s', '--save', dest='save', action='store_true')
+    parser.add_argument('-p', '--print', dest='print', action='store_true')
+    
     # parse args
     args = parser.parse_args()
     
     imgFile = args.imgFile
   
-    # set output file
+    # set text output file
     outFile = 'out.txt'
     if args.outFile:
         outFile = args.outFile
+        
+    # set img output file
+    filename = imgFile.split('/')[-1].split('.')[0]
+    imgOutFile = 'out/' + filename + '_ascii.png'
+    if args.imgOutFile:
+        imgOutFile = args.imgOutFile
   
     # set scale default as 0.43 which suits
     # a Courier font
@@ -300,40 +315,53 @@ def main():
     cols = 80
     if args.cols:
         cols = int(args.cols)
-  
-    print('generating ASCII art...')
-    
-    start = time.perf_counter()
-    # convert image to ascii txt
-    aimg, cimg = covertImageToAscii(imgFile, cols, scale, args.moreLevels, args.invert)
-    end = time.perf_counter()
-    print(f"Completed {end - start:0.4f} seconds")
-  
-    # open file
-    f = open(outFile, 'w')
-  
-    # write to file
-    for i in range(len(aimg)):
-        for j in range(len(aimg[0])):
-            f.write(cimg[i][j] + aimg[i][j])
-        f.write("\n")
         
-    f.write("\033[0m")
-    # cleanup
-    f.close()
-    
-    # show output
-    f = open(outFile, 'r')
-    print(f.read())
-    f.close()
-  
-    
-    print("ASCII art written to %s" % outFile)
+    # set color scheme
+    colors = color_schemes['grayscale_5']
+    if (args.colorScheme == 0):
+        colors = color_schemes['binary']
+    elif (args.colorScheme == 1):
+        colors = color_schemes['grayscale_4b']
+    elif (args.colorScheme == 2):
+        colors = color_schemes['grayscale_3']
+    elif (args.colorScheme == 3):
+        colors = color_schemes['grayscale_5']
+    elif (args.colorScheme == 10):
+        colors = color_schemes['rgb_colorful']
+    elif (args.colorScheme == 11):
+        colors = color_schemes['rgb_cool']
+        
+    # -------------------------------------- #
+    print('generating ASCII art...')
     start = time.perf_counter()
-    image = text_image(aimg, cimg, args.invert)
-    image.show()
+    
+    # convert image to ascii txt
+    aimg, cimg = covertImageToAscii(imgFile, colors, cols, scale, args.moreLevels, args.inverted)
+  
+    # write to text file
+    f = open(outFile, 'w')
+    for line, line_colors in zip(aimg, cimg):
+        for c, color in zip(line, line_colors):
+            f.write(color + c)
+        f.write("\n")        
+    f.write("\033[0m")
+    f.close()
+    
+    # print output
+    if args.print:
+        f = open(outFile, 'r')
+        print(f.read())
+        f.close()
+    
+    # make image from text
+    image = text_image(aimg, cimg, args.inverted)
+    # save/show the image
+    if not args.hide:
+        image.show()
+    if args.save:
+        image.save(imgOutFile)
+    
     end = time.perf_counter()
-    # image.save('out/male_bilo3_rgb.png')
     print(f"Completed {end - start:0.4f} seconds")
     
   
