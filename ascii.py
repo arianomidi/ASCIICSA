@@ -21,7 +21,7 @@ gscale2 = '@%#*+=-:. '
 
 # color codes schemes
 color_schemes = {
-    'binary' : [ '\033[37m'],
+    'binary' : ['\033[37m'],
     'grayscale_4b' : [ '\033[97m', '\033[37m', '\033[90m', '\033[0m'],
     'grayscale_3' : [ '\033[38;5;255m', '\033[38;5;248m', '\033[38;5;241m', '\033[0m'],
     'grayscale_5' : [ '\033[38;5;255m', '\033[38;5;250m', '\033[38;5;244m', '\033[38;5;239m', '\033[38;5;235m', '\033[0m' ],
@@ -30,58 +30,28 @@ color_schemes = {
     'rgb_cool' : [ '\033[37m', '\033[95m', '\033[35m', '\033[34m', '\033[0m']
 }
 
-def normalizeImage():
+def normalizeTiles(tiles):
     """
-    Given PIL Image, return average value of grayscale value
+    Given numpy array, filter and return normalized image array
     """
-    # get image as numpy array
-    im = np.array(image)
-  
-    # get max and min values
-    min_val = np.amin(im.reshape(w*h))
-    max_val = np.amax(im.reshape(w*h))
+    print(tiles.min(), tiles.max())
     
-    return min_val, max_val
+    # percentage filter
+    min_val = np.percentile(tiles, 0)
+    max_val = np.percentile(tiles, 100)
+    tiles = np.clip(tiles, min_val, max_val)
+    
+    print(tiles.min(), tiles.max())
+    
+    # normalize tile value array
+    normalized_tiles = (tiles - min_val) / (max_val - min_val)
+    
+    return normalized_tiles
     
 def filterImage(image):
-    return image.filter(ImageFilter.EDGE_ENHANCE_MORE)
-  
-def covertImageToAscii(fileName, colors, cols, scale, moreLevels, invertImg):
-    
-    """
-    Given Image and dims (rows, cols) returns an m*n list of Images 
-    """
-    # declare globals
-    global gscale1, gscale2
-  
-    # open image and convert to grayscale
-    image = Image.open(fileName).convert('L')
-    
-  
-    # store dimensions
-    W, H = image.size[0], image.size[1]
-    print("input image dims: %d x %d" % (W, H))
-  
-    # compute width of tile
-    w = W / cols
-  
-    # compute tile height based on aspect ratio and scale
-    h = w / scale
-  
-    # compute number of rows
-    rows = int(H/h)
-      
-    print("cols: %d, rows: %d" % (cols, rows))
-    print("tile dims: %d x %d" % (w, h))
-  
-    # check if image size is too small
-    if cols > W or rows > H:
-        print("Image too small for specified cols!")
-        exit(0)
-    
-    # get image as numpy array
-    im = np.array(image)
-    
+    # return image
+
+    return image.filter(ImageFilter.DETAIL)
     # ------ todo: remove ------
     # f = plt.figure()
     # f.add_subplot(1,2, 1)
@@ -93,16 +63,48 @@ def covertImageToAscii(fileName, colors, cols, scale, moreLevels, invertImg):
     # plt.imshow(block_mean, cmap='gray', vmin=0, vmax=255)
     # plt.show(block=True)
     # ------ todo: remove ------
+  
+def covertImageToAscii(fileName, colors, cols, scale, moreLevels, invertImg):
+    """
+    Given Image and dims (rows, cols) returns an m*n list of Images 
+    """
+    # declare globals
+    global gscale1, gscale2
+  
+    # open image and convert to grayscale
+    image = Image.open(fileName).convert('L')
+    image = filterImage(image)
+  
+    # store dimensions
+    W, H = image.size[0], image.size[1]
+    print(" - input image dims: %d x %d" % (W, H))
+  
+    # compute width of tile
+    w = W / cols
+  
+    # compute tile height based on aspect ratio and scale
+    h = w / scale
+  
+    # compute number of rows
+    rows = int(H/h)
+      
+    print(" - cols: %d, rows: %d" % (cols, rows))
+    print(" - tile dims: %d x %d" % (w, h))
+  
+    # check if image size is too small
+    if cols > W or rows > H:
+        print("Image too small for specified cols!")
+        exit(0)
     
-
+    # get image as numpy array
+    im = np.array(image)
     im = im.transpose()
-    print("image array " + str(im.shape))
-    
+        
     # apply filter
     if (invertImg):
         im = 255 - im
 
-    
+
     """
     Given numpy array of a b/w image, get the average value tile array
     """
@@ -131,41 +133,7 @@ def covertImageToAscii(fileName, colors, cols, scale, moreLevels, invertImg):
         
         avgs.append(row_avgs)  
     
-    tiles = np.array(avgs)
-    
-    # ------ todo: remove ------
-    # f = plt.figure()
-    # f.add_subplot(1,2, 1)
-    # plt.imshow(tiles, cmap='gray', vmin=0, vmax=255)
-    
-    # # filtered_tiles = ndimage.median_filter(tiles, 3)
-    
-    # f.add_subplot(1,2, 2)
-    # plt.imshow(filtered_tiles, cmap='gray', vmin=0, vmax=255)
-    # plt.show(block=True)
-    # tiles = filtered_tiles
-    # ------ todo: remove ------
-    
-    
-    
-    
-    
-    # tiles = gaussian_filter(tiles, sigma=1.5)
-    # tiles = percentile_filter(tiles, percentile=20, size=2)
-    print(tiles.min(), tiles.max())
-    
-    # normalize tile value array
-    min_val = np.percentile(tiles, 0)
-    max_val = np.percentile(tiles, 80)
-    tiles = np.clip(tiles, min_val, max_val)
-    
-    print(tiles.min(), tiles.max())
-
-    # min_val = 0
-    # max_val = 255
-    normal_tiles = (tiles - min_val) / (max_val - min_val)
-    
-    print(normal_tiles.min(), normal_tiles.max())
+    tiles = normalizeTiles(np.array(avgs))
   
     # ascii image is a list of character strings
     aimg = []
@@ -178,42 +146,30 @@ def covertImageToAscii(fileName, colors, cols, scale, moreLevels, invertImg):
         cimg.append([])
         
         for i in range(cols):
-            # todo: add command
-            color_index = int((len(colors)-1) * normal_tiles[j][i])
-            cimg[j].append(colors[color_index])
-            
-            # look up ascii char
-            # min_val = color_index / (len(colors) - 1)
-            # max_val = (color_index + 1) / (len(colors) - 1)
-            # char_ratio = (normal_tiles[j][i] - min_val) / (max_val - min_val)
-            # # if (normal_tiles[j][i] == 1):
-            # #     char_ratio = 1
-            # print("norm: %.2f, char_ratio: %.2f, color_index: %.2f, min_val: %.2f, max_val: %.2f" % (normal_tiles[j][i], char_ratio, color_index, min_val, max_val))
-            
+            # get character representation of tile
             gsval = ""
-            char_ratio = normal_tiles[j][i]
+            char_ratio = tiles[j][i]
             
             if moreLevels:
                 gsval += gscale1[int(69 * char_ratio)]
             else:
-                gsval += gscale2[int(9 * char_ratio)]            
-  
+                gsval += gscale2[int(9 * char_ratio)]   
+                
+            # get coresponding color of tile
+            color_index = int((len(colors)-1) * tiles[j][i])
+            cimg[j].append(colors[color_index])     
+            
             # append ascii char to string
-            aimg[j] += gsval
-    
+            aimg[j] += gsval    
+  
     # return txt image
     return aimg, cimg
 
 
 # --------- TODO: refactor -------------- #
 
-PIXEL_ON = "#000000"  # PIL color to use for "on"
-PIXEL_OFF = '#1c1c1c'  # PIL color to use for "off"
-
-BACKGROUND_COLOR = "#1c1c1c"
 WIDTH_SCALING_FACTOR = 0.75
 HEIGHT_SCALING_FACTOR = 0.84
-
 
 def text_image(aimg, cimg, inverted, font_path=None):
     """Convert text file to a grayscale image with black characters on a white background.
@@ -222,6 +178,8 @@ def text_image(aimg, cimg, inverted, font_path=None):
     text_path - the content of this file will be converted to an image
     font_path - path to a font file (for example impact.ttf)
     """
+    # declare globals
+    global WIDTH_SCALING_FACTOR, HEIGHT_SCALING_FACTOR
     
     # # parse the file into lines
     # with open(text_path) as text_file:  # can throw FileNotFoundError
@@ -277,11 +235,12 @@ def main():
     # add expected arguments
     parser.add_argument('imgFile')
     
-    parser.add_argument('-c', '--colors', dest='colorScheme', type=int, choices=[0, 1, 2, 3, 10, 11])
+    parser.add_argument('-g', '--greyscale', dest='greyscaleScheme', type=int, choices=[0, 1, 2, 3], default=3)
+    parser.add_argument('-c', '--color', dest='colorScheme', type=int, choices=[0, 1])
     parser.add_argument('-n', '--cols', dest='cols', type=int, required=False)
     parser.add_argument('-l', '--scale', dest='scale', type=float, required=False)
     parser.add_argument('-m', '--morelevels', dest='moreLevels', action='store_true')
-    parser.add_argument('-i', '--invert', dest='inverted', action='store_true')
+    parser.add_argument('-i', '--invert', dest='inverted', action='store_false')
     
     parser.add_argument('-o', '--out', dest='outFile', required=False)
     parser.add_argument('-O', '--imgout', dest='imgOutFile', required=False)
@@ -305,7 +264,7 @@ def main():
     if args.imgOutFile:
         imgOutFile = args.imgOutFile
   
-    # set scale default as 0.43 which suits
+    # set scale default as 0.5 which suits
     # a Courier font
     scale = 0.5
     if args.scale:
@@ -317,19 +276,19 @@ def main():
         cols = int(args.cols)
         
     # set color scheme
-    colors = color_schemes['grayscale_5']
     if (args.colorScheme == 0):
-        colors = color_schemes['binary']
-    elif (args.colorScheme == 1):
-        colors = color_schemes['grayscale_4b']
-    elif (args.colorScheme == 2):
-        colors = color_schemes['grayscale_3']
-    elif (args.colorScheme == 3):
-        colors = color_schemes['grayscale_5']
-    elif (args.colorScheme == 10):
         colors = color_schemes['rgb_colorful']
-    elif (args.colorScheme == 11):
+    elif (args.colorScheme == 1):
         colors = color_schemes['rgb_cool']
+    elif (args.greyscaleScheme == 0):
+        colors = color_schemes['binary']
+    elif (args.greyscaleScheme == 1):
+        colors = color_schemes['grayscale_4b']
+    elif (args.greyscaleScheme == 2):
+        colors = color_schemes['grayscale_3']
+    elif (args.greyscaleScheme == 3):
+        colors = color_schemes['grayscale_5']
+    
         
     # -------------------------------------- #
     print('generating ASCII art...')
@@ -350,7 +309,7 @@ def main():
     # print output
     if args.print:
         f = open(outFile, 'r')
-        print(f.read())
+        print(f.read()) 
         f.close()
     
     # make image from text
@@ -358,7 +317,7 @@ def main():
     # save/show the image
     if not args.hide:
         image.show()
-    if args.save:
+    if args.save or args.imgOutFile:
         image.save(imgOutFile)
     
     end = time.perf_counter()
