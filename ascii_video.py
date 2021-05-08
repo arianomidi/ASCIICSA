@@ -1,10 +1,11 @@
 import cv2
 import time
-import os
+import os, sys, subprocess
 from pathlib import Path
 from PIL import Image
 import numpy as np
 from tqdm import tqdm, trange
+import argparse
 
 from ascii import convertImageToAscii, text_image, color_schemes
 
@@ -17,6 +18,17 @@ def convertOpenCV2PIL(img_cv):
 def convertPIL2OpenCV(img_pil):
     img_arr = np.array(img_pil)
     return cv2.cvtColor(img_arr, cv2.COLOR_RGB2BGR)
+
+
+def extractFrame(filename, out):
+    cam = cv2.VideoCapture(filename)
+    ret, frame = cam.read()
+    cv2.imwrite(out, frame)
+
+    cam.release()
+    cv2.destroyAllWindows()
+
+    return frame
 
 
 def img_to_vid(in_path, out, fps):
@@ -67,18 +79,12 @@ def vid_to_img(filename, out):
     cv2.destroyAllWindows()
 
 
-def convertVideoToAscii(filename, out):
-    fps = 18
-    colors = color_schemes["grayscale_5"]
-    cols = 80
-    scale = 0.5
-    moreLevels = True
-    invert = True
-
+def convertVideoToAscii(filename, out, fps, colors, cols, scale, moreLevels, invert):
     # init video capture
     cam = cv2.VideoCapture(str(filename))
     total_frames = int(cam.get(cv2.CAP_PROP_FRAME_COUNT))
-    fps = int(cam.get(cv2.CAP_PROP_FPS))
+    if not fps:
+        fps = int(cam.get(cv2.CAP_PROP_FPS))
 
     # init output video
     success, frame = cam.read()
@@ -124,29 +130,102 @@ def convertVideoToAscii(filename, out):
     cv2.destroyAllWindows()
 
 
-def test():
-    filename = Path("data/test_video.mp4")
-    out = Path("out/video/test1.mp4")
+def main():
+    # create parser
+    descStr = "This program converts a video into ASCII art."
+    parser = argparse.ArgumentParser(description=descStr)
+    # add expected arguments
+    parser.add_argument("filename")
 
-    frames_out = Path("out/video/frames/")
-    ascii_out = Path("out/video/ascii/")
-    vid_out = Path("out/video/eyes_ascii.mp4")
-    fps = 18
+    parser.add_argument(
+        "-g",
+        "--greyscale",
+        dest="greyscaleScheme",
+        type=int,
+        choices=[0, 1, 2, 3],
+        default=3,
+    )
+    parser.add_argument("-c", "--color", dest="colorScheme", type=int, choices=[0, 1])
+    parser.add_argument("-n", "--cols", dest="cols", type=int, required=False)
+    parser.add_argument("-l", "--scale", dest="scale", type=float, required=False)
+    parser.add_argument("-m", "--morelevels", dest="moreLevels", action="store_true")
+    parser.add_argument("-i", "--invert", dest="invert", action="store_false")
+    parser.add_argument("-f", "--fps", dest="fps", type=int, required=False)
 
-    print("Converting video to ascii...")
-    start = time.perf_counter()
+    parser.add_argument("-o", "--out", dest="outFile", required=False)
+    parser.add_argument("-H", "--hide", dest="hide", action="store_true")
 
+    # parse args
+    args = parser.parse_args()
+
+    # open image and convert to grayscale
+    filename = Path(args.filename)
     # Check if file given is valid
     if not filename.exists():
         print("ERROR: Video does not exist.")
         exit(0)
 
+    # set text output file
+    outFile = Path("out/{}_ascii.mp4".format(filename.stem))
+    if args.outFile:
+        outFile = Path(args.outFile)
+
+    # set scale default as 0.5 which suits
+    # a Courier font
+    scale = 0.5
+    if args.scale:
+        scale = float(args.scale)
+
+    # set cols
+    cols = 80
+    if args.cols:
+        cols = int(args.cols)
+
+    # set color scheme
+    if args.colorScheme == 0:
+        colors = color_schemes["rgb_colorful"]
+    elif args.colorScheme == 1:
+        colors = color_schemes["rgb_cool"]
+    elif args.greyscaleScheme == 0:
+        colors = color_schemes["binary"]
+    elif args.greyscaleScheme == 1:
+        colors = color_schemes["grayscale_4b"]
+    elif args.greyscaleScheme == 2:
+        colors = color_schemes["grayscale_3"]
+    elif args.greyscaleScheme == 3:
+        colors = color_schemes["grayscale_5"]
+
+    # -------------------------------------- #
+    # Confirm if about to overwrite a file
+    if outFile.is_file():
+        response = input(
+            "Warning: file '{}' already exists.\nContinue and overwrite this file? (y/n) ".format(
+                outFile
+            )
+        )
+        if response.upper() != "Y":
+            exit(0)
+
+    outFile.parent.mkdir(parents=True, exist_ok=True)
+
+    print("generating ASCII art...")
+    start = time.perf_counter()
+
     # Convert video to ascii
-    convertVideoToAscii(filename, out)
+    convertVideoToAscii(
+        filename, outFile, args.fps, colors, cols, scale, args.moreLevels, args.invert
+    )
+
+    # Show video
+    if not args.hide:
+        if sys.platform == "win32":
+            os.startfile(outFile)
+        else:
+            opener = "open" if sys.platform == "darwin" else "xdg-open"
+            subprocess.call([opener, outFile])
 
     end = time.perf_counter()
     print(f"Completed {end - start:0.4f} seconds")
-
     # # ------------------------------------------------------------------#
 
     # print("Converting video to frames...")
@@ -210,4 +289,4 @@ def test():
 
 # call main
 if __name__ == "__main__":
-    test()
+    main()

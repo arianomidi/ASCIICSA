@@ -47,7 +47,7 @@ def normalizeTiles(tiles):
 
     # percentage filter
     min_val = np.percentile(tiles, 0)
-    max_val = np.percentile(tiles, 100)
+    max_val = np.percentile(tiles, 75)
     tiles = np.clip(tiles, min_val, max_val)
 
     """print(tiles.min(), tiles.max())"""
@@ -179,7 +179,7 @@ def covertImageToAscii(image, colors, cols, scale, moreLevels, invertImg):
 # --------- TODO: refactor -------------- #
 
 WIDTH_SCALING_FACTOR = 0.75
-HEIGHT_SCALING_FACTOR = 0.84
+HEIGHT_SCALING_FACTOR = 8 / 11
 
 
 def text_image(aimg, cimg, inverted, font_path=None):
@@ -199,11 +199,15 @@ def text_image(aimg, cimg, inverted, font_path=None):
 
     # choose a font (you can see more detail in my library on github)
     large_font = 20  # get better resolution with larger size
+    default_font_path = (
+        "fonts/SFMono-Semibold.otf" if inverted else "fonts/SFMono-Heavy.otf"
+    )
     font_path = (
-        font_path or "fonts/SFMono-Medium.otf"
+        font_path or default_font_path
     )  # Courier New. works in windows. linux may need more explicit path
     try:
         font = ImageFont.truetype(font_path, size=large_font)
+
     except IOError:
         font = ImageFont.load_default()
         print("Could not use chosen font. Using default.")
@@ -216,12 +220,12 @@ def text_image(aimg, cimg, inverted, font_path=None):
         lines, key=lambda s: font.getsize(s)[0]
     )  # get line with largest width
     # max height is adjusted down because it's too large visually for spacing
-    test_string = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    test_string = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnop.,;:'/|{}[]()&$%#@"
     max_height = pt2px(font.getsize(test_string)[1])
     max_width = pt2px(font.getsize(max_width_line)[0])
     char_width = round(max_width / len(max_width_line))
     height = int(
-        max_height * len(lines) * HEIGHT_SCALING_FACTOR
+        (max_height) * len(lines) * HEIGHT_SCALING_FACTOR
     )  # perfect or a little oversized
     width = int(max_width * WIDTH_SCALING_FACTOR)  # a little oversized
     image = Image.new("RGB", (width, height), color=background_color(inverted))
@@ -272,7 +276,7 @@ def main():
     descStr = "This program converts an image into ASCII art."
     parser = argparse.ArgumentParser(description=descStr)
     # add expected arguments
-    parser.add_argument("imgFile")
+    parser.add_argument("filename")
 
     parser.add_argument(
         "-g",
@@ -286,7 +290,7 @@ def main():
     parser.add_argument("-n", "--cols", dest="cols", type=int, required=False)
     parser.add_argument("-l", "--scale", dest="scale", type=float, required=False)
     parser.add_argument("-m", "--morelevels", dest="moreLevels", action="store_true")
-    parser.add_argument("-i", "--invert", dest="inverted", action="store_false")
+    parser.add_argument("-i", "--invert", dest="invert", action="store_false")
 
     parser.add_argument("-o", "--out", dest="outFile", required=False)
     parser.add_argument("-O", "--imgout", dest="imgOutFile", required=False)
@@ -298,11 +302,11 @@ def main():
     args = parser.parse_args()
 
     # open image and convert to grayscale
-    imgFile = Path(args.imgFile)
-    if imgFile.exists:
-        image = Image.open(args.imgFile).convert("L")
+    filename = Path(args.filename)
+    if filename.exists():
+        image = Image.open(args.filename).convert("L")
     else:
-        print("ERROR : Image does not exist.")
+        print("ERROR: Image does not exist.")
         exit(0)
 
     # set text output file
@@ -311,9 +315,9 @@ def main():
         outFile = args.outFile
 
     # set img output file
-    imgOutFile = Path("out") / "{}_ascii.png".format(imgFile.stem)
+    imgOutFile = Path("out/{}_ascii.png".format(filename.stem))
     if args.imgOutFile:
-        imgOutFile = args.imgOutFile
+        imgOutFile = Path(args.imgOutFile)
 
     # set scale default as 0.5 which suits
     # a Courier font
@@ -346,30 +350,41 @@ def main():
 
     # convert image to ascii txt
     aimg, cimg = covertImageToAscii(
-        image, colors, cols, scale, args.moreLevels, args.inverted
+        image, colors, cols, scale, args.moreLevels, args.invert
     )
+
+    # make image from text
+    image = text_image(aimg, cimg, args.invert)
 
     # write to text file
     f = open(outFile, "w")
+    background_color = "\033[40m" if args.invert else "\033[107m"
     for line, line_colors in zip(aimg, cimg):
+        f.write(background_color)
         for c, color in zip(line, line_colors):
             f.write(color + c)
-        f.write("\n")
-    f.write("\033[0m")
+        f.write("\033[0m\n")
     f.close()
 
     # print output
     if args.print:
         f = open(outFile, "r")
-        print(f.read())
+        print(f.read(), end="")
         f.close()
 
-    # make image from text
-    image = text_image(aimg, cimg, args.inverted)
     # save/show the image
     if not args.hide:
         image.show()
     if args.save or args.imgOutFile:
+        # Confirm if about to overwrite a file
+        if imgOutFile.is_file():
+            response = input(
+                "Warning: file '{}' already exists.\nContinue and overwrite this file? (y/n) ".format(
+                    imgOutFile
+                )
+            )
+            if response.upper() != "Y":
+                exit(0)
         image.save(imgOutFile)
 
     end = time.perf_counter()
