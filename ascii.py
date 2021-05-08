@@ -6,10 +6,12 @@ from scipy import ndimage
 import math
 from pathlib import Path
 import matplotlib.pyplot as plt
+from colorthief import ColorThief
 
 from PIL import Image, ImageFilter, ImageFont, ImageDraw, ImageOps
 
 from ansi import *
+from color_extraction import *
 
 # gray scale level values from:
 # http://paulbourke.net/dataformats/asciiart/
@@ -47,7 +49,7 @@ def normalizeTiles(tiles):
 
     # percentage filter
     min_val = np.percentile(tiles, 0)
-    max_val = np.percentile(tiles, 75)
+    max_val = np.percentile(tiles, 100)
     tiles = np.clip(tiles, min_val, max_val)
 
     """print(tiles.min(), tiles.max())"""
@@ -73,6 +75,21 @@ def filterImage(image):
     # plt.imshow(block_mean, cmap='gray', vmin=0, vmax=255)
     # plt.show(block=True)
     # ------ todo: remove ------
+
+
+def autoColor(filename, colorCount):
+    image_cv = get_image(str(filename))
+    colors_grey = get_colors(image_cv, colorCount, show_chart=True, greyscale=True)
+    colors_grey.sort()
+
+    # colors_hex.sort()
+    # sort_key = lambda rgb: sum(rgb) / 3
+    # palette.sort(key=sort_key)
+
+    colors = list(map(lambda val: rgbToAnsi256(val[0], val[0], val[0]), colors_grey))
+    print("Val: {}, ANSI: {}".format(colors_grey, colors))
+
+    return colors
 
 
 def covertImageToAscii(image, colors, cols, scale, moreLevels, invertImg):
@@ -343,6 +360,8 @@ def main():
         colors = color_schemes["grayscale_3"]
     elif args.greyscaleScheme == 3:
         colors = color_schemes["grayscale_5"]
+
+    colors = autoColor(filename, 6)
 
     # -------------------------------------- #
     print("generating ASCII art...")

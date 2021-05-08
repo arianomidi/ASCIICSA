@@ -23,7 +23,7 @@ def get_image(image_path):
     return image
 
 
-def get_colors(image, number_of_colors, show_chart=True, greyscale=False):
+def get_colors(image, number_of_colors, show_chart=False, greyscale=False):
     modified_image = cv2.resize(image, (600, 400), interpolation=cv2.INTER_AREA)
     if greyscale:
         modified_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -50,6 +50,8 @@ def get_colors(image, number_of_colors, show_chart=True, greyscale=False):
     else:
         hex_colors = [RGB2HEX(ordered_colors[i]) for i in counts.keys()]
     rgb_colors = [ordered_colors[i] for i in counts.keys()]
+
+    print(rgb_colors)
 
     if show_chart:
         plt.figure(figsize=(10, 6))
