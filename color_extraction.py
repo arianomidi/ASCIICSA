@@ -25,7 +25,10 @@ def get_image(image_path):
 
 def getGreyscalePalatte(image, number_of_colors, show_chart=False):
     modified_image = cv2.resize(image, (600, 400), interpolation=cv2.INTER_AREA)
-    modified_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    # modified_image = modified_image
+    # modified_image = modified_image[modified_image > 0]
+
+    print(modified_image)
     modified_image = modified_image.reshape(-1, 1)
 
     clf = KMeans(n_clusters=number_of_colors)
@@ -47,8 +50,7 @@ def getGreyscalePalatte(image, number_of_colors, show_chart=False):
         plt.figure(figsize=(10, 6))
 
         plt.subplot(1, 2, 1)
-        gray_img = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        plt.imshow(gray_img, cmap="gray")
+        plt.imshow(image, cmap="gray")
 
         plt.subplot(1, 2, 2)
         plt.pie(counts.values(), labels=hex_colors, colors=hex_colors)

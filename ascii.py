@@ -61,7 +61,20 @@ def normalizeTiles(tiles):
 
 
 def filterImage(image):
-    return image
+    print(image.min(), image.max())
+
+    # percentage filter
+    min_val = np.percentile(image, 0)
+    max_val = np.percentile(image, 100)
+    filtered_img = np.clip(image, min_val, max_val)
+
+    print(image.min(), image.max())
+
+    # normalize tile value array
+    normalized_img = (filtered_img - min_val) / (max_val - min_val)
+
+    return normalized_img
+
     # return image.filter(ImageFilter.DETAIL)
 
     # ------ todo: remove ------
@@ -77,19 +90,16 @@ def filterImage(image):
     # ------ todo: remove ------
 
 
-def autoColor(filename, colorCount):
-    image_cv = get_image(str(filename))
-    colors_grey = get_colors(image_cv, colorCount, show_chart=True, greyscale=True)
+def autoColor(image, colorCount):
+    image_cv = np.array(image)
+    print(image_cv)
+    colors_grey = getGreyscalePalatte(image_cv, colorCount, show_chart=True)
     colors_grey.sort()
 
-    # colors_hex.sort()
-    # sort_key = lambda rgb: sum(rgb) / 3
-    # palette.sort(key=sort_key)
+    # colors = list(map(lambda val: rgbToAnsi256(val, val, val), colors_grey))
+    print("Colors: {}".format(colors_grey))
 
-    colors = list(map(lambda val: rgbToAnsi256(val[0], val[0], val[0]), colors_grey))
-    print("Val: {}, ANSI: {}".format(colors_grey, colors))
-
-    return colors
+    return colors_grey
 
 
 def covertImageToAscii(image, colors, cols, scale, moreLevels, invertImg):
@@ -98,9 +108,6 @@ def covertImageToAscii(image, colors, cols, scale, moreLevels, invertImg):
     """
     # declare globals
     global gscale1, gscale2
-
-    # filter image
-    image = filterImage(image)
 
     # store dimensions
     W, H = image.size[0], image.size[1]
@@ -126,11 +133,6 @@ def covertImageToAscii(image, colors, cols, scale, moreLevels, invertImg):
     # get image as numpy array
     im = np.array(image)
     im = im.transpose()
-
-    # apply inversion
-    if invertImg:
-        im = 255 - im
-        colors = list(reversed(colors))
 
     """
     Given numpy array of a b/w image, get the average value tile array
@@ -162,6 +164,17 @@ def covertImageToAscii(image, colors, cols, scale, moreLevels, invertImg):
 
     tiles = normalizeTiles(np.array(avgs))
 
+    # colors = getGreyscalePalatte(tiles, 10, show_chart=False)
+    # colors.sort()
+    # print(colors)
+
+    # apply inversion
+    if invertImg:
+        tiles = 1 - tiles
+        colors = list(reversed(colors))
+
+    color_palette = np.asarray(colors)
+
     # ascii image is a list of character strings
     aimg = []
     # color image is a list of ansi color codes strings
@@ -178,12 +191,13 @@ def covertImageToAscii(image, colors, cols, scale, moreLevels, invertImg):
             char_ratio = tiles[j][i]
 
             if moreLevels:
-                gsval += gscale1[int(69 * char_ratio)]
+                gsval += gscale1[round(69 * char_ratio)]
             else:
-                gsval += gscale2[int(9 * char_ratio)]
+                gsval += gscale2[round(9 * char_ratio)]
 
             # get coresponding color of tile
-            color_index = int((len(colors) - 1) * tiles[j][i])
+            color_index = (np.abs(color_palette - 255 * (1 - char_ratio))).argmin()
+            # color_index = int((len(colors) - 1) * char_ratio)
             cimg[j].append(colors[color_index])
 
             # append ascii char to string
@@ -259,7 +273,8 @@ def text_image(aimg, cimg, inverted, font_path=None):
     for line, line_colors in zip(lines, cimg):
         hor_pos = horizontal_position
         for c, color in zip(line, line_colors):
-            rbg_color = ansi_rgb(color)
+            # rbg_color = ansi_rgb(color)
+            rbg_color = (color, color, color)
             draw.text((hor_pos, vertical_position), c, fill=rbg_color, font=font)
             hor_pos += char_spacing
         vertical_position += line_spacing
@@ -361,8 +376,14 @@ def main():
     elif args.greyscaleScheme == 3:
         colors = color_schemes["grayscale_5"]
 
-    colors = autoColor(filename, 6)
-
+    # colors = autoColor(filename, 6)
+    # num_of_colors = 6
+    # colors = []
+    # for i in range(num_of_colors):
+    #     color = int(i * 255 / (num_of_colors - 1))
+    #     colors.append(color)
+    # print(colors)
+    colors = autoColor(image, 10)
     # -------------------------------------- #
     print("generating ASCII art...")
     start = time.perf_counter()
@@ -375,21 +396,21 @@ def main():
     # make image from text
     image = text_image(aimg, cimg, args.invert)
 
-    # write to text file
-    f = open(outFile, "w")
-    background_color = "\033[40m" if args.invert else "\033[107m"
-    for line, line_colors in zip(aimg, cimg):
-        f.write(background_color)
-        for c, color in zip(line, line_colors):
-            f.write(color + c)
-        f.write("\033[0m\n")
-    f.close()
+    # # write to text file
+    # f = open(outFile, "w")
+    # background_color = "\033[40m" if args.invert else "\033[107m"
+    # for line, line_colors in zip(aimg, cimg):
+    #     f.write(background_color)
+    #     for c, color in zip(line, line_colors):
+    #         f.write(color + c)
+    #     f.write("\033[0m\n")
+    # f.close()
 
-    # print output
-    if args.print:
-        f = open(outFile, "r")
-        print(f.read(), end="")
-        f.close()
+    # # print output
+    # if args.print:
+    #     f = open(outFile, "r")
+    #     print(f.read(), end="")
+    #     f.close()
 
     # save/show the image
     if not args.hide:
