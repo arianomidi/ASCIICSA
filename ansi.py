@@ -41,6 +41,30 @@ std_rgb = [
 # ]
 
 
+def ansi8_rgb():
+    ansi8_hex = std_rgb[0:8]
+    ansi8_rgb = []
+
+    for hex in ansi8_hex:
+        hex_code = hex.lstrip("#")
+        rgb = tuple(int(hex_code[2 * i : 2 * i + 2], 16) for i in range(3))
+        ansi8_rgb.append(rgb)
+
+    return ansi8_rgb
+
+
+def ansi16_rgb():
+    ansi16_hex = std_rgb[0:16]
+    ansi16_rgb = []
+
+    for hex in ansi16_hex:
+        hex_code = hex.lstrip("#")
+        rgb = tuple(int(hex_code[2 * i : 2 * i + 2], 16) for i in range(3))
+        ansi16_rgb.append(rgb)
+
+    return ansi16_rgb
+
+
 def rgbToAnsi256(r, g, b):
     # we use the extended greyscale palette here, with the exception of
     # black and white. normal palette only has 4 greyscale shades.

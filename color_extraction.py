@@ -60,17 +60,9 @@ def getGreyscalePalatte(image, number_of_colors, show_chart=False):
     return rgb_colors
 
 
-def get_colors(image, number_of_colors, show_chart=False, greyscale=False):
+def getColorPalatte(image, number_of_colors, show_chart=False):
     modified_image = cv2.resize(image, (600, 400), interpolation=cv2.INTER_AREA)
-    if greyscale:
-        modified_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        modified_image = modified_image.reshape(
-            modified_image.shape[0] * modified_image.shape[1], 1
-        )
-    else:
-        modified_image = modified_image.reshape(
-            modified_image.shape[0] * modified_image.shape[1], 3
-        )
+    modified_image = modified_image.reshape(-1, 3)
 
     clf = KMeans(n_clusters=number_of_colors)
     labels = clf.fit_predict(modified_image)
@@ -80,12 +72,12 @@ def get_colors(image, number_of_colors, show_chart=False, greyscale=False):
     counts = dict(sorted(counts.items()))
 
     center_colors = clf.cluster_centers_
+    center_colors = np.rint(center_colors)
+    center_colors = center_colors.astype(int)
+    center_colors = [tuple(color) for color in center_colors]
     # We get ordered colors by iterating through the keys
     ordered_colors = [center_colors[i] for i in counts.keys()]
-    if greyscale:
-        hex_colors = [GRAY2HEX(ordered_colors[i]) for i in counts.keys()]
-    else:
-        hex_colors = [RGB2HEX(ordered_colors[i]) for i in counts.keys()]
+    hex_colors = [RGB2HEX(ordered_colors[i]) for i in counts.keys()]
     rgb_colors = [ordered_colors[i] for i in counts.keys()]
 
     print(rgb_colors)
@@ -93,11 +85,7 @@ def get_colors(image, number_of_colors, show_chart=False, greyscale=False):
     if show_chart:
         plt.figure(figsize=(10, 6))
         plt.subplot(1, 2, 1)
-        if greyscale:
-            gray_img = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-            plt.imshow(gray_img, cmap="gray")
-        else:
-            plt.imshow(image)
+        plt.imshow(image)
 
         plt.subplot(1, 2, 2)
         plt.pie(counts.values(), labels=hex_colors, colors=hex_colors)

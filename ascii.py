@@ -91,15 +91,21 @@ def filterImage(image):
 
 
 def autoColor(image, colorCount):
+    # TODO: refactor
     image_cv = np.array(image)
-    print(image_cv)
-    colors_grey = getGreyscalePalatte(image_cv, colorCount, show_chart=True)
-    colors_grey.sort()
+    # image_cv = cv2.cvtColor(img_arr, cv2.COLOR_RGB2BGR)
+
+    # print(image_cv)
+    # colors_grey = getGreyscalePalatte(image_cv, colorCount, show_chart=True)
+    # colors_grey.sort()
+
+    colors = getColorPalatte(image_cv, colorCount, show_chart=False)
+    colors.sort()
 
     # colors = list(map(lambda val: rgbToAnsi256(val, val, val), colors_grey))
-    print("Colors: {}".format(colors_grey))
+    print("Colors: {}".format(colors))
 
-    return colors_grey
+    return colors
 
 
 def covertImageToAscii(image, colors, cols, scale, moreLevels, invertImg):
@@ -131,8 +137,8 @@ def covertImageToAscii(image, colors, cols, scale, moreLevels, invertImg):
         exit(0)
 
     # get image as numpy array
+    # image_greyscale = image.convert("L")
     im = np.array(image)
-    im = im.transpose()
 
     """
     Given numpy array of a b/w image, get the average value tile array
@@ -157,16 +163,27 @@ def covertImageToAscii(image, colors, cols, scale, moreLevels, invertImg):
                 x2 = W
 
             # get avg brightness array of tile
-            avg = np.median(im[x1:x2, y1:y2])
-            row_avgs.append(avg)
+            tile = im[y1:y2, x1:x2]
+            tile_rgb = np.average(tile, axis=(0, 1))
+            if j == i and i == 0:
+                print(tile_rgb)
+            row_avgs.append(tile_rgb)
 
         avgs.append(row_avgs)
 
-    tiles = normalizeTiles(np.array(avgs))
+    tiles_rgb = np.array(avgs)
+    tiles_greyscale = np.average(tiles_rgb, axis=2, weights=[0.299, 0.587, 0.114])
+    tiles_rgb = np.rint(tiles_rgb).astype(int)
+    tiles = normalizeTiles(tiles_greyscale)
 
-    # colors = getGreyscalePalatte(tiles, 10, show_chart=False)
-    # colors.sort()
-    # print(colors)
+    # plt.figure(figsize=(10, 6))
+    # plt.subplot(1, 2, 1)
+    # plt.imshow(tiles, cmap="gray")
+
+    # plt.subplot(1, 2, 2)
+    # plt.imshow(tiles_rgb)
+
+    # plt.show()
 
     # apply inversion
     if invertImg:
@@ -196,7 +213,10 @@ def covertImageToAscii(image, colors, cols, scale, moreLevels, invertImg):
                 gsval += gscale2[round(9 * char_ratio)]
 
             # get coresponding color of tile
-            color_index = (np.abs(color_palette - 255 * (1 - char_ratio))).argmin()
+            tile_rgb = tiles_rgb[j][i]
+            deltas = color_palette - tile_rgb
+            dist_2 = np.einsum("ij,ij->i", deltas, deltas)
+            color_index = np.argmin(dist_2)
             # color_index = int((len(colors) - 1) * char_ratio)
             cimg[j].append(colors[color_index])
 
@@ -274,7 +294,7 @@ def text_image(aimg, cimg, inverted, font_path=None):
         hor_pos = horizontal_position
         for c, color in zip(line, line_colors):
             # rbg_color = ansi_rgb(color)
-            rbg_color = (color, color, color)
+            rbg_color = color
             draw.text((hor_pos, vertical_position), c, fill=rbg_color, font=font)
             hor_pos += char_spacing
         vertical_position += line_spacing
@@ -336,7 +356,7 @@ def main():
     # open image and convert to grayscale
     filename = Path(args.filename)
     if filename.exists():
-        image = Image.open(args.filename).convert("L")
+        image = Image.open(args.filename).convert("RGB")
     else:
         print("ERROR: Image does not exist.")
         exit(0)
@@ -376,14 +396,20 @@ def main():
     elif args.greyscaleScheme == 3:
         colors = color_schemes["grayscale_5"]
 
-    # colors = autoColor(filename, 6)
-    # num_of_colors = 6
+    # num_of_colors = 10
     # colors = []
     # for i in range(num_of_colors):
     #     color = int(i * 255 / (num_of_colors - 1))
-    #     colors.append(color)
+    #     colors.append((color, color, color))
     # print(colors)
-    colors = autoColor(image, 10)
+    print("generating colors...")
+    start = time.perf_counter()
+
+    colors = ansi16_rgb()
+    # colors = autoColor(image, 10)
+
+    end = time.perf_counter()
+    print(f"Completed {end - start:0.4f} seconds")
     # -------------------------------------- #
     print("generating ASCII art...")
     start = time.perf_counter()
