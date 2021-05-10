@@ -325,11 +325,15 @@ def main():
         "-g",
         "--greyscale",
         dest="greyscaleScheme",
+        nargs="?",
         type=int,
-        choices=[0, 1, 2, 3],
-        default=3,
+        const=8,
+        default=8,
     )
-    parser.add_argument("-c", "--color", dest="colorScheme", type=int, choices=[0, 1])
+    parser.add_argument(
+        "-c", "--color", dest="colorScheme", type=int, nargs="?", const=8
+    )
+    parser.add_argument("-a", "--autoColor", dest="autoColor", action="store_true")
     parser.add_argument("-n", "--cols", dest="cols", type=int, required=False)
     parser.add_argument("-l", "--scale", dest="scale", type=float, required=False)
     parser.add_argument("-m", "--morelevels", dest="moreLevels", action="store_true")
@@ -374,33 +378,28 @@ def main():
         cols = int(args.cols)
 
     # set color scheme
-    if args.colorScheme == 0:
-        colors = color_schemes["rgb_colorful"]
-    elif args.colorScheme == 1:
-        colors = color_schemes["rgb_cool"]
-    elif args.greyscaleScheme == 0:
-        colors = color_schemes["binary"]
-    elif args.greyscaleScheme == 1:
-        colors = color_schemes["grayscale_4b"]
-    elif args.greyscaleScheme == 2:
-        colors = color_schemes["grayscale_3"]
-    elif args.greyscaleScheme == 3:
-        colors = color_schemes["grayscale_5"]
+    if args.autoColor:
+        # TODO: remove timers
+        print("generating colors...")
+        start = time.perf_counter()
+        print(args.colorScheme)
 
-    # num_of_colors = 10
-    # colors = []
-    # for i in range(num_of_colors):
-    #     color = int(i * 255 / (num_of_colors - 1))
-    #     colors.append((color, color, color))
-    # print(colors)
-    print("generating colors...")
-    start = time.perf_counter()
+        num_of_colors = args.colorScheme or args.greyscaleScheme
+        is_greyscale = args.colorScheme == None
+        colors = autoColor(image, num_of_colors, greyscale=is_greyscale)
 
-    # colors = ansi16_rgb()
-    colors = autoColor(image, 6, greyscale=False)
+        end = time.perf_counter()
+        print(f"Completed {end - start:0.4f} seconds")
+    else:
+        if args.colorScheme:
+            colors = ansi16_rgb()
+        else:
+            colors = []
+            for i in range(args.greyscaleScheme):
+                color = int(i * 255 / (args.greyscaleScheme - 1))
+                colors.append((color, color, color))
+        print(colors)
 
-    end = time.perf_counter()
-    print(f"Completed {end - start:0.4f} seconds")
     # -------------------------------------- #
     print("generating ASCII art...")
     start = time.perf_counter()
@@ -413,7 +412,7 @@ def main():
     # make image from text
     image = text_image(aimg, cimg, args.invert)
 
-    # # write to text file
+    # # TODO: write to text file
     # f = open(outFile, "w")
     # background_color = "\033[40m" if args.invert else "\033[107m"
     # for line, line_colors in zip(aimg, cimg):
