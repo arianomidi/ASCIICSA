@@ -90,19 +90,21 @@ def filterImage(image):
     # ------ todo: remove ------
 
 
-def autoColor(image, colorCount):
+def autoColor(image, colorCount, greyscale=False, show_chart=False):
     # TODO: refactor
+    if greyscale:
+        image = image.convert("L")
+
     image_cv = np.array(image)
-    # image_cv = cv2.cvtColor(img_arr, cv2.COLOR_RGB2BGR)
 
-    # print(image_cv)
-    # colors_grey = getGreyscalePalatte(image_cv, colorCount, show_chart=True)
-    # colors_grey.sort()
+    if greyscale:
+        colors = getGreyscalePalatte(image_cv, colorCount, show_chart)
+    else:
+        colors = getColorPalatte(image_cv, colorCount, show_chart)
 
-    colors = getColorPalatte(image_cv, colorCount, show_chart=False)
-    colors.sort()
-
+    # colors.sort()
     # colors = list(map(lambda val: rgbToAnsi256(val, val, val), colors_grey))
+
     print("Colors: {}".format(colors))
 
     return colors
@@ -164,9 +166,7 @@ def covertImageToAscii(image, colors, cols, scale, moreLevels, invertImg):
 
             # get avg brightness array of tile
             tile = im[y1:y2, x1:x2]
-            tile_rgb = np.average(tile, axis=(0, 1))
-            if j == i and i == 0:
-                print(tile_rgb)
+            tile_rgb = np.median(tile, axis=(0, 1))
             row_avgs.append(tile_rgb)
 
         avgs.append(row_avgs)
@@ -175,15 +175,6 @@ def covertImageToAscii(image, colors, cols, scale, moreLevels, invertImg):
     tiles_greyscale = np.average(tiles_rgb, axis=2, weights=[0.299, 0.587, 0.114])
     tiles_rgb = np.rint(tiles_rgb).astype(int)
     tiles = normalizeTiles(tiles_greyscale)
-
-    # plt.figure(figsize=(10, 6))
-    # plt.subplot(1, 2, 1)
-    # plt.imshow(tiles, cmap="gray")
-
-    # plt.subplot(1, 2, 2)
-    # plt.imshow(tiles_rgb)
-
-    # plt.show()
 
     # apply inversion
     if invertImg:
@@ -212,12 +203,12 @@ def covertImageToAscii(image, colors, cols, scale, moreLevels, invertImg):
             else:
                 gsval += gscale2[round(9 * char_ratio)]
 
-            # get coresponding color of tile
+            # get closest color in palette to that of the tile
             tile_rgb = tiles_rgb[j][i]
             deltas = color_palette - tile_rgb
             dist_2 = np.einsum("ij,ij->i", deltas, deltas)
             color_index = np.argmin(dist_2)
-            # color_index = int((len(colors) - 1) * char_ratio)
+
             cimg[j].append(colors[color_index])
 
             # append ascii char to string
@@ -405,8 +396,8 @@ def main():
     print("generating colors...")
     start = time.perf_counter()
 
-    colors = ansi16_rgb()
-    # colors = autoColor(image, 10)
+    # colors = ansi16_rgb()
+    colors = autoColor(image, 6, greyscale=False)
 
     end = time.perf_counter()
     print(f"Completed {end - start:0.4f} seconds")

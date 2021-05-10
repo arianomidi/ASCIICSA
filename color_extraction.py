@@ -8,27 +8,22 @@ import os
 
 
 def RGB2HEX(color):
-    return "#{:02x}{:02x}{:02x}".format(int(color[0]), int(color[1]), int(color[2]))
+    return "#{:02x}{:02x}{:02x}".format(
+        round(color[0]), round(color[1]), round(color[2])
+    )
 
 
 def GRAY2HEX(color):
-    return "#{0:02x}{0:02x}{0:02x}".format(color)
+    return "#{0:02x}{0:02x}{0:02x}".format(round(color))
 
 
-def get_image(image_path):
-    image = cv2.imread(image_path)
-
-    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-
-    return image
+def GRAY2RGB(brightness):
+    brightness_int = round(brightness)
+    return (brightness_int, brightness_int, brightness_int)
 
 
 def getGreyscalePalatte(image, number_of_colors, show_chart=False):
     modified_image = cv2.resize(image, (600, 400), interpolation=cv2.INTER_AREA)
-    # modified_image = modified_image
-    # modified_image = modified_image[modified_image > 0]
-
-    print(modified_image)
     modified_image = modified_image.reshape(-1, 1)
 
     clf = KMeans(n_clusters=number_of_colors)
@@ -39,12 +34,9 @@ def getGreyscalePalatte(image, number_of_colors, show_chart=False):
     counts = dict(sorted(counts.items()))
 
     center_colors = clf.cluster_centers_.flatten()
-    center_colors = np.rint(center_colors)
-    center_colors = center_colors.astype(int)
     # We get ordered colors by iterating through the keys
     ordered_colors = [center_colors[i] for i in counts.keys()]
-    hex_colors = [GRAY2HEX(ordered_colors[i]) for i in counts.keys()]
-    rgb_colors = [ordered_colors[i] for i in counts.keys()]
+    rgb_colors = [GRAY2RGB(ordered_colors[i]) for i in counts.keys()]
 
     if show_chart:
         plt.figure(figsize=(10, 6))
@@ -53,6 +45,7 @@ def getGreyscalePalatte(image, number_of_colors, show_chart=False):
         plt.imshow(image, cmap="gray")
 
         plt.subplot(1, 2, 2)
+        hex_colors = [GRAY2HEX(ordered_colors[i]) for i in counts.keys()]
         plt.pie(counts.values(), labels=hex_colors, colors=hex_colors)
 
         plt.show()
@@ -80,8 +73,6 @@ def getColorPalatte(image, number_of_colors, show_chart=False):
     hex_colors = [RGB2HEX(ordered_colors[i]) for i in counts.keys()]
     rgb_colors = [ordered_colors[i] for i in counts.keys()]
 
-    print(rgb_colors)
-
     if show_chart:
         plt.figure(figsize=(10, 6))
         plt.subplot(1, 2, 1)
@@ -96,8 +87,9 @@ def getColorPalatte(image, number_of_colors, show_chart=False):
 
 
 def main():
-    image = get_image("data/stary_night.jpg")
-    get_colors(image, 8, greyscale=True)
+    image = cv2.imread("data/stary_night.jpg")
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    getGreyscalePalatte(image, 8, show_chart=True)
 
 
 if __name__ == "__main__":

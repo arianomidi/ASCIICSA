@@ -7,7 +7,7 @@ import numpy as np
 from tqdm import tqdm, trange
 import argparse
 
-from ascii import convertImageToAscii, text_image, color_schemes
+from ascii import convertImageToAscii, color_schemes, autoColor
 
 
 def convertOpenCV2PIL(img_cv):
@@ -20,10 +20,12 @@ def convertPIL2OpenCV(img_pil):
     return cv2.cvtColor(img_arr, cv2.COLOR_RGB2BGR)
 
 
-def extractFrame(filename, out):
+def extractFrame(filename, out=None):
     cam = cv2.VideoCapture(filename)
     ret, frame = cam.read()
-    cv2.imwrite(out, frame)
+
+    if out:
+        cv2.imwrite(out, frame)
 
     cam.release()
     cv2.destroyAllWindows()
@@ -88,7 +90,7 @@ def convertVideoToAscii(filename, out, fps, colors, cols, scale, moreLevels, inv
 
     # init output video
     success, frame = cam.read()
-    frame_pil = convertOpenCV2PIL(frame).convert("L")
+    frame_pil = convertOpenCV2PIL(frame).convert("RGB")  # TODO: change if too slow
     ascii_img = convertImageToAscii(frame_pil, colors, cols, scale, moreLevels, invert)
     width, height = ascii_img.size[0], ascii_img.size[1]
     video = cv2.VideoWriter(
@@ -102,7 +104,7 @@ def convertVideoToAscii(filename, out, fps, colors, cols, scale, moreLevels, inv
             pbar.update(1)
 
             # convert OpenCV image to PIL and to greyscale
-            frame = convertOpenCV2PIL(frame).convert("L")
+            frame = convertOpenCV2PIL(frame).convert("RGB")  # TODO: change if too slow
 
             # convert image to ascii
             ascii_img = convertImageToAscii(
@@ -194,6 +196,14 @@ def main():
         colors = color_schemes["grayscale_3"]
     elif args.greyscaleScheme == 3:
         colors = color_schemes["grayscale_5"]
+
+    # auto color
+    sample_frame = convertOpenCV2PIL(extractFrame(str(filename))).convert("RGB")
+    colors = autoColor(sample_frame, 16, show_chart=False)
+    ascii_img = convertImageToAscii(
+        sample_frame, colors, cols, scale, args.moreLevels, args.invert
+    )
+    ascii_img.show()
 
     # -------------------------------------- #
     # Confirm if about to overwrite a file
