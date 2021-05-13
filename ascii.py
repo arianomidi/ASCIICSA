@@ -9,6 +9,10 @@ import matplotlib.pyplot as plt
 from colorthief import ColorThief
 
 from PIL import Image, ImageFilter, ImageFont, ImageDraw, ImageOps
+import cv2
+from skimage.measure import block_reduce
+from skimage.transform import downscale_local_mean, resize, rescale
+
 
 from ansi import *
 from color_extraction import *
@@ -119,7 +123,7 @@ def covertImageToAscii(image, colors, cols, scale, moreLevels, invertImg):
 
     # store dimensions
     W, H = image.size[0], image.size[1]
-    """print(" - input image dims: %d x %d" % (W, H))"""
+    print(" - input image dims: %d x %d" % (W, H))
 
     # compute width of tile
     w = W / cols
@@ -128,10 +132,12 @@ def covertImageToAscii(image, colors, cols, scale, moreLevels, invertImg):
     h = w / scale
 
     # compute number of rows
-    rows = int(H / h)
+    rows = int(H / h)  # TODO
+    w = int(w)
+    h = int(h)
 
-    """print(" - cols: %d, rows: %d" % (cols, rows))
-    print(" - tile dims: %d x %d" % (w, h))"""
+    print(" - cols: %f, rows: %f" % (cols, rows))
+    print(" - tile dims: %f x %f" % (w, h))
 
     # check if image size is too small
     if cols > W or rows > H:
@@ -142,39 +148,41 @@ def covertImageToAscii(image, colors, cols, scale, moreLevels, invertImg):
     # image_greyscale = image.convert("L")
     im = np.array(image)
 
-    """
-    Given numpy array of a b/w image, get the average value tile array
-    """
-    avgs = []
-
-    for j in range(rows):
-        row_avgs = []
-        y1 = int(j * h)
-        y2 = int((j + 1) * h)
-
-        # correct last tile
-        if j == rows - 1:
-            y2 = H
-
-        for i in range(cols):
-            x1 = int(i * w)
-            x2 = int((i + 1) * w)
-
-            # correct last tile
-            if i == cols - 1:
-                x2 = W
-
-            # get avg brightness array of tile
-            tile = im[y1:y2, x1:x2]
-            tile_rgb = np.median(tile, axis=(0, 1))
-            row_avgs.append(tile_rgb)
-
-        avgs.append(row_avgs)
-
-    tiles_rgb = np.array(avgs)
+    print("Block Reduction...")
+    start = time.perf_counter()
+    r = block_reduce(im[:, :, 0], (h, w), np.median)
+    g = block_reduce(im[:, :, 1], (h, w), np.median)
+    b = block_reduce(im[:, :, 2], (h, w), np.median)
+    tiles_rgb = np.stack((r, g, b), axis=-1)
+    print(tiles_rgb.shape)
     tiles_greyscale = np.average(tiles_rgb, axis=2, weights=[0.299, 0.587, 0.114])
     tiles_rgb = np.rint(tiles_rgb).astype(int)
     tiles = normalizeTiles(tiles_greyscale)
+    end = time.perf_counter()
+    print(f"Completed {end - start:0.4f} seconds")
+
+    # print("Mean Downscale...")
+    # start = time.perf_counter()
+    # r = downscale_local_mean(im[:, :, 0], (h, w))
+    # g = downscale_local_mean(im[:, :, 1], (h, w))
+    # b = downscale_local_mean(im[:, :, 2], (h, w))
+    # tiles_rgb = np.stack((r, g, b), axis=-1)
+    # print(tiles_rgb.shape)
+    # tiles_greyscale = np.average(tiles_rgb, axis=2, weights=[0.299, 0.587, 0.114])
+    # tiles_rgb = np.rint(tiles_rgb).astype(int)
+    # tiles = normalizeTiles(tiles_greyscale)
+    # end = time.perf_counter()
+    # print(f"Completed {end - start:0.4f} seconds")
+
+    # print("OpenCV sampling...")
+    # start = time.perf_counter()
+    # tiles_rgb = cv2.resize(im, (cols, rows), interpolation=cv2.INTER_AREA)
+    # print(tiles_rgb.shape)
+    # tiles_greyscale = np.average(tiles_rgb, axis=2, weights=[0.299, 0.587, 0.114])
+    # tiles_rgb = np.rint(tiles_rgb).astype(int)
+    # tiles = normalizeTiles(tiles_greyscale)
+    # end = time.perf_counter()
+    # print(f"Completed {end - start:0.4f} seconds")
 
     # apply inversion
     if invertImg:
@@ -216,6 +224,16 @@ def covertImageToAscii(image, colors, cols, scale, moreLevels, invertImg):
 
     # return txt image
     return aimg, cimg
+
+
+def block_mean(ar, fact):
+    assert isinstance(fact, int), type(fact)
+    sx, sy = ar.shape
+    X, Y = np.ogrid[0:sx, 0:sy]
+    regions = sy / fact * (X / fact) + Y / fact
+    res = ndimage.mean(ar, labels=regions, index=np.arange(regions.max() + 1))
+    res.shape = (sx / fact, sy / fact)
+    return res
 
 
 # --------- TODO: refactor -------------- #
