@@ -8,7 +8,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 from colorthief import ColorThief
 
-from PIL import Image, ImageFilter, ImageFont, ImageDraw, ImageOps
+from PIL import Image, ImageFilter, ImageFont, ImageDraw, ImageOps, ImageEnhance
 import cv2
 from skimage.measure import block_reduce
 from skimage.transform import downscale_local_mean, resize, rescale
@@ -56,42 +56,39 @@ def normalizeTiles(tiles):
     max_val = np.percentile(tiles, 100)
     tiles = np.clip(tiles, min_val, max_val)
 
+    # standard
+    # min_val = 0
+    # max_val = 255
+
     """print(tiles.min(), tiles.max())"""
 
     # normalize tile value array
-    normalized_tiles = (tiles - min_val) / (max_val - min_val)
+    if max_val != min_val:
+        normalized_tiles = (tiles - min_val) / (max_val - min_val)
+    else:
+        normalized_tiles = tiles - min_val
 
     return normalized_tiles
 
 
 def filterImage(image):
-    print(image.min(), image.max())
+    # image brightness enhancer
+    enhancer = ImageEnhance.Brightness(image)
 
-    # percentage filter
-    min_val = np.percentile(image, 0)
-    max_val = np.percentile(image, 100)
-    filtered_img = np.clip(image, min_val, max_val)
+    factor = 1.3
+    filtered_image = enhancer.enhance(factor)
 
-    print(image.min(), image.max())
-
-    # normalize tile value array
-    normalized_img = (filtered_img - min_val) / (max_val - min_val)
-
-    return normalized_img
-
-    # return image.filter(ImageFilter.DETAIL)
-
-    # ------ todo: remove ------
+    # ------ TODO: remove ------
     # f = plt.figure()
-    # f.add_subplot(1,2, 1)
-    # plt.imshow(im, cmap='gray', vmin=0, vmax=255)
-
-    # im = ndimage.median_filter(im, 3)
+    # f.add_subplot(1, 2, 1)
+    # plt.imshow(image)
 
     # f.add_subplot(1, 2, 2)
-    # plt.imshow(block_mean, cmap='gray', vmin=0, vmax=255)
+    # plt.imshow(filtered_image)
     # plt.show(block=True)
-    # ------ todo: remove ------
+    # ------ TODO: remove ------
+
+    return filtered_image
 
 
 def autoColor(image, colorCount, greyscale=False, show_chart=False):
@@ -102,16 +99,9 @@ def autoColor(image, colorCount, greyscale=False, show_chart=False):
     image_cv = np.array(image)
 
     if greyscale:
-        colors = getGreyscalePalatte(image_cv, colorCount, show_chart)
+        return getGreyscalePalatte(image_cv, colorCount, show_chart)
     else:
-        colors = getColorPalatte(image_cv, colorCount, show_chart)
-
-    # colors.sort()
-    # colors = list(map(lambda val: rgbToAnsi256(val, val, val), colors_grey))
-
-    print("Colors: {}".format(colors))
-
-    return colors
+        return getColorPalatte(image_cv, colorCount, show_chart)
 
 
 def covertImageToAscii(image, colors, cols, scale, moreLevels, invertImg):
@@ -123,21 +113,17 @@ def covertImageToAscii(image, colors, cols, scale, moreLevels, invertImg):
 
     # store dimensions
     W, H = image.size[0], image.size[1]
-    print(" - input image dims: %d x %d" % (W, H))
-
-    # compute width of tile
-    w = W / cols
-
-    # compute tile height based on aspect ratio and scale
-    h = w / scale
+    # print(" - input image dims: %d x %d" % (W, H))
 
     # compute number of rows
-    rows = int(H / h)  # TODO
-    w = int(w)
-    h = int(h)
+    rows = int(H * scale * cols / W)  # TODO
+    # compute width of tile
+    w = int(W / cols)
+    # compute tile height based on aspect ratio and scale
+    h = int(W / (scale * cols))
 
-    print(" - cols: %f, rows: %f" % (cols, rows))
-    print(" - tile dims: %f x %f" % (w, h))
+    # print(" - cols: %f, rows: %f" % (cols, rows))
+    # print(" - tile dims: %f x %f" % (w, h))
 
     # check if image size is too small
     if cols > W or rows > H:
@@ -148,18 +134,14 @@ def covertImageToAscii(image, colors, cols, scale, moreLevels, invertImg):
     # image_greyscale = image.convert("L")
     im = np.array(image)
 
-    print("Block Reduction...")
-    start = time.perf_counter()
     r = block_reduce(im[:, :, 0], (h, w), np.median)
     g = block_reduce(im[:, :, 1], (h, w), np.median)
     b = block_reduce(im[:, :, 2], (h, w), np.median)
     tiles_rgb = np.stack((r, g, b), axis=-1)
-    print(tiles_rgb.shape)
+    # print(tiles_rgb.shape)
     tiles_greyscale = np.average(tiles_rgb, axis=2, weights=[0.299, 0.587, 0.114])
     tiles_rgb = np.rint(tiles_rgb).astype(int)
     tiles = normalizeTiles(tiles_greyscale)
-    end = time.perf_counter()
-    print(f"Completed {end - start:0.4f} seconds")
 
     # print("Mean Downscale...")
     # start = time.perf_counter()
@@ -198,42 +180,21 @@ def covertImageToAscii(image, colors, cols, scale, moreLevels, invertImg):
     # generate list of dimensions
     for j in range(rows):
         # append an empty string
-        aimg.append("")
+        aimg.append([])
         cimg.append([])
 
         for i in range(cols):
             # get character representation of tile
-            gsval = ""
-            char_ratio = tiles[j][i]
-
-            if moreLevels:
-                gsval += gscale1[round(69 * char_ratio)]
-            else:
-                gsval += gscale2[round(9 * char_ratio)]
+            gsval = gscale1[round(69 * tiles[j][i])]
+            aimg[j].append(gsval)
 
             # get closest color in palette to that of the tile
-            tile_rgb = tiles_rgb[j][i]
-            deltas = color_palette - tile_rgb
+            deltas = color_palette - tiles_rgb[j][i]
             dist_2 = np.einsum("ij,ij->i", deltas, deltas)
             color_index = np.argmin(dist_2)
-
             cimg[j].append(colors[color_index])
 
-            # append ascii char to string
-            aimg[j] += gsval
-
-    # return txt image
     return aimg, cimg
-
-
-def block_mean(ar, fact):
-    assert isinstance(fact, int), type(fact)
-    sx, sy = ar.shape
-    X, Y = np.ogrid[0:sx, 0:sy]
-    regions = sy / fact * (X / fact) + Y / fact
-    res = ndimage.mean(ar, labels=regions, index=np.arange(regions.max() + 1))
-    res.shape = (sx / fact, sy / fact)
-    return res
 
 
 # --------- TODO: refactor -------------- #
@@ -277,12 +238,12 @@ def text_image(aimg, cimg, inverted, font_path=None):
         round(pt * 96.0 / 72)
     )  # function that converts points to pixels
     max_width_line = max(
-        lines, key=lambda s: font.getsize(s)[0]
+        lines, key=lambda char_arr: font.getsize("".join(char_arr))[0]
     )  # get line with largest width
     # max height is adjusted down because it's too large visually for spacing
     test_string = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnop.,;:'/|{}[]()&$%#@"
     max_height = pt2px(font.getsize(test_string)[1])
-    max_width = pt2px(font.getsize(max_width_line)[0])
+    max_width = pt2px(font.getsize("".join(max_width_line))[0])
     char_width = round(max_width / len(max_width_line))
     height = int(
         (max_height) * len(lines) * HEIGHT_SCALING_FACTOR
@@ -293,18 +254,15 @@ def text_image(aimg, cimg, inverted, font_path=None):
 
     # draw each line of text
     vertical_position = 0
-    horizontal_position = 0
     line_spacing = round(
         max_height * HEIGHT_SCALING_FACTOR
     )  # reduced spacing seems better
     char_spacing = round(char_width * WIDTH_SCALING_FACTOR)
 
     for line, line_colors in zip(lines, cimg):
-        hor_pos = horizontal_position
+        hor_pos = 0
         for c, color in zip(line, line_colors):
-            # rbg_color = ansi_rgb(color)
-            rbg_color = color
-            draw.text((hor_pos, vertical_position), c, fill=rbg_color, font=font)
+            draw.text((hor_pos, vertical_position), c, fill=color, font=font)
             hor_pos += char_spacing
         vertical_position += line_spacing
 
@@ -321,10 +279,14 @@ def convertImageToAscii(
     scale=0.5,
     moreLevels=True,
     invertImg=True,
+    filter=True,
 ):
     """
     Converts given image to an ASCII image
     """
+
+    if filter:
+        image = filterImage(image)
     # get text and ANSI colors of image
     aimg, cimg = covertImageToAscii(image, colors, cols, scale, moreLevels, invertImg)
     # convert to image
@@ -349,12 +311,14 @@ def main():
         default=8,
     )
     parser.add_argument(
-        "-c", "--color", dest="colorScheme", type=int, nargs="?", const=8
+        "-c", "--color", dest="colorScheme", type=int, nargs="?", const=16
     )
     parser.add_argument("-a", "--autoColor", dest="autoColor", action="store_true")
     parser.add_argument("-n", "--cols", dest="cols", type=int, required=False)
     parser.add_argument("-l", "--scale", dest="scale", type=float, required=False)
-    parser.add_argument("-m", "--morelevels", dest="moreLevels", action="store_true")
+    parser.add_argument(
+        "-m", "--morelevels", dest="moreLevels", action="store_true"
+    )  # TODO: remove
     parser.add_argument("-i", "--invert", dest="invert", action="store_false")
 
     parser.add_argument("-o", "--out", dest="outFile", required=False)
@@ -370,6 +334,7 @@ def main():
     filename = Path(args.filename)
     if filename.exists():
         image = Image.open(args.filename).convert("RGB")
+        image = filterImage(image)
     else:
         print("ERROR: Image does not exist.")
         exit(0)
@@ -398,16 +363,9 @@ def main():
     # set color scheme
     if args.autoColor:
         # TODO: remove timers
-        print("generating colors...")
-        start = time.perf_counter()
-        print(args.colorScheme)
-
         num_of_colors = args.colorScheme or args.greyscaleScheme
         is_greyscale = args.colorScheme == None
         colors = autoColor(image, num_of_colors, greyscale=is_greyscale)
-
-        end = time.perf_counter()
-        print(f"Completed {end - start:0.4f} seconds")
     else:
         if args.colorScheme:
             colors = ansi16_rgb()
@@ -416,7 +374,6 @@ def main():
             for i in range(args.greyscaleScheme):
                 color = int(i * 255 / (args.greyscaleScheme - 1))
                 colors.append((color, color, color))
-        print(colors)
 
     # -------------------------------------- #
     print("generating ASCII art...")
@@ -429,6 +386,8 @@ def main():
 
     # make image from text
     image = text_image(aimg, cimg, args.invert)
+    end = time.perf_counter()
+    print(f"Text to Image {end - start:0.4f} seconds")
 
     # # TODO: write to text file
     # f = open(outFile, "w")
@@ -447,8 +406,6 @@ def main():
     #     f.close()
 
     # save/show the image
-    if not args.hide:
-        image.show()
     if args.save or args.imgOutFile:
         # Confirm if about to overwrite a file
         if imgOutFile.is_file():
@@ -459,7 +416,19 @@ def main():
             )
             if response.upper() != "Y":
                 exit(0)
+
+        imgOutFile.parent.mkdir(parents=True, exist_ok=True)
         image.save(imgOutFile)
+
+        # Show video
+        if not args.hide:
+            if sys.platform == "win32":
+                os.startfile(imgOutFile)
+            else:
+                opener = "open" if sys.platform == "darwin" else "xdg-open"
+                subprocess.call([opener, imgOutFile])
+    elif not args.hide:
+        image.show()
 
     end = time.perf_counter()
     print(f"Completed {end - start:0.4f} seconds")

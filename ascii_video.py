@@ -22,6 +22,9 @@ def convertPIL2OpenCV(img_pil):
 
 def extractFrame(filename, out=None):
     cam = cv2.VideoCapture(filename)
+    total_frames = cam.get(7)
+    cam.set(1, total_frames // 2)
+
     ret, frame = cam.read()
 
     if out:
@@ -81,12 +84,21 @@ def vid_to_img(filename, out):
     cv2.destroyAllWindows()
 
 
-def convertVideoToAscii(filename, out, fps, colors, cols, scale, moreLevels, invert):
+def convertVideoToAscii(
+    filename,
+    out,
+    fps,
+    colors,
+    frameAutoColor,
+    colorSampleRate,
+    cols,
+    scale,
+    moreLevels,
+    invert,
+):
     # init video capture
     cam = cv2.VideoCapture(str(filename))
     total_frames = int(cam.get(cv2.CAP_PROP_FRAME_COUNT))
-    if not fps:
-        fps = int(cam.get(cv2.CAP_PROP_FPS))
 
     # init output video
     success, frame = cam.read()
@@ -98,6 +110,7 @@ def convertVideoToAscii(filename, out, fps, colors, cols, scale, moreLevels, inv
     )
 
     # init progress bar
+    frame_num = 0
     with tqdm(total=total_frames, ncols=75, unit="f") as pbar:
         while success:
             # update the progress bar
@@ -106,9 +119,13 @@ def convertVideoToAscii(filename, out, fps, colors, cols, scale, moreLevels, inv
             # convert OpenCV image to PIL and to greyscale
             frame = convertOpenCV2PIL(frame).convert("RGB")  # TODO: change if too slow
 
+            # auto color every n frames
+            if frameAutoColor and frame_num % colorSampleRate == 0:
+                colors = frameAutoColor(frame)
+
             # convert image to ascii
             ascii_img = convertImageToAscii(
-                frame, colors, cols, scale, moreLevels, invert
+                frame, colors, cols, scale, moreLevels, invert, filter=False
             )
 
             # convert ascii frame from PIL to OpenCV and add to the video
@@ -119,6 +136,7 @@ def convertVideoToAscii(filename, out, fps, colors, cols, scale, moreLevels, inv
             success, frame = cam.read()
             if not success:
                 break
+            frame_num += 1
 
             # if frame_num <= 3:
             #     ascii_img.show()
@@ -143,11 +161,18 @@ def main():
         "-g",
         "--greyscale",
         dest="greyscaleScheme",
+        nargs="?",
         type=int,
-        choices=[0, 1, 2, 3],
-        default=3,
+        const=8,
+        default=8,
     )
-    parser.add_argument("-c", "--color", dest="colorScheme", type=int, choices=[0, 1])
+    parser.add_argument(
+        "-c", "--color", dest="colorScheme", type=int, nargs="?", const=16
+    )
+    parser.add_argument("-a", "--autoColor", dest="autoColor", action="store_true")
+    parser.add_argument(
+        "-R", "--colorSampleRate", dest="colorSampleRate", type=int, nargs="?", const=-1
+    )
     parser.add_argument("-n", "--cols", dest="cols", type=int, required=False)
     parser.add_argument("-l", "--scale", dest="scale", type=float, required=False)
     parser.add_argument("-m", "--morelevels", dest="moreLevels", action="store_true")
@@ -156,6 +181,7 @@ def main():
 
     parser.add_argument("-o", "--out", dest="outFile", required=False)
     parser.add_argument("-H", "--hide", dest="hide", action="store_true")
+    parser.add_argument("-t", "--test", dest="test", action="store_true")
 
     # parse args
     args = parser.parse_args()
@@ -183,27 +209,51 @@ def main():
     if args.cols:
         cols = int(args.cols)
 
-    # set color scheme
-    if args.colorScheme == 0:
-        colors = color_schemes["rgb_colorful"]
-    elif args.colorScheme == 1:
-        colors = color_schemes["rgb_cool"]
-    elif args.greyscaleScheme == 0:
-        colors = color_schemes["binary"]
-    elif args.greyscaleScheme == 1:
-        colors = color_schemes["grayscale_4b"]
-    elif args.greyscaleScheme == 2:
-        colors = color_schemes["grayscale_3"]
-    elif args.greyscaleScheme == 3:
-        colors = color_schemes["grayscale_5"]
+    # set fps
+    fps = args.fps
+    if not args.fps:
+        cam = cv2.VideoCapture(str(filename))
+        fps = int(cam.get(cv2.CAP_PROP_FPS))
+        cam.release()
+        cv2.destroyAllWindows()
 
-    # auto color
-    sample_frame = convertOpenCV2PIL(extractFrame(str(filename))).convert("RGB")
-    colors = autoColor(sample_frame, 16, show_chart=False)
-    ascii_img = convertImageToAscii(
-        sample_frame, colors, cols, scale, args.moreLevels, args.invert
-    )
-    ascii_img.show()
+    # set sample rate
+    sampleRate = fps
+    if args.colorSampleRate:
+        sampleRate = args.colorSampleRate
+
+    # set color scheme
+    if args.autoColor:
+        num_of_colors = args.colorScheme or args.greyscaleScheme
+        is_greyscale = args.colorScheme == None
+        frameAutoColor = lambda frame: autoColor(
+            frame, num_of_colors, greyscale=is_greyscale
+        )
+
+        sample_frame = convertOpenCV2PIL(extractFrame(str(filename))).convert("RGB")
+        colors = frameAutoColor(sample_frame)
+    else:
+        if args.colorScheme:
+            colors = ansi16_rgb()
+        else:
+            colors = []
+            for i in range(args.greyscaleScheme):
+                color = int(i * 255 / (args.greyscaleScheme - 1))
+                colors.append((color, color, color))
+
+    # test frame
+    if args.test:
+        sample_frame = convertOpenCV2PIL(extractFrame(str(filename))).convert("RGB")
+        if frameAutoColor:
+            colors = frameAutoColor(sample_frame)
+        ascii_img = convertImageToAscii(
+            sample_frame, colors, cols, scale, args.moreLevels, args.invert
+        )
+        ascii_img.show()
+
+        response = input("Continue? (y/n) ".format(outFile))
+        if response.upper() != "Y":
+            exit(0)
 
     # -------------------------------------- #
     # Confirm if about to overwrite a file
@@ -223,7 +273,16 @@ def main():
 
     # Convert video to ascii
     convertVideoToAscii(
-        filename, outFile, args.fps, colors, cols, scale, args.moreLevels, args.invert
+        filename,
+        outFile,
+        fps,
+        colors,
+        frameAutoColor,
+        sampleRate,
+        cols,
+        scale,
+        args.moreLevels,
+        args.invert,
     )
 
     # Show video
