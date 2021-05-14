@@ -4,9 +4,11 @@ import os, sys, subprocess
 from pathlib import Path
 from PIL import Image
 import numpy as np
+import matplotlib.pyplot as plt
 from tqdm import tqdm, trange
 import argparse
 
+from ansi import *
 from ascii import convertImageToAscii, color_schemes, autoColor
 
 
@@ -20,12 +22,20 @@ def convertPIL2OpenCV(img_pil):
     return cv2.cvtColor(img_arr, cv2.COLOR_RGB2BGR)
 
 
-def extractFrame(filename, out=None):
+def extractFrame(filename, out=None, dest=0.5):
+    """Extracts frame from video.
+    dest=0 -> start
+    dest=1 -> end"""
+
     cam = cv2.VideoCapture(filename)
-    total_frames = cam.get(7)
-    cam.set(1, total_frames // 2)
 
     ret, frame = cam.read()
+    while cam.get(cv2.CAP_PROP_POS_AVI_RATIO) <= dest:
+        ret = cam.grab()
+        if ret:
+            ret, frame = cam.retrieve()
+        else:
+            break
 
     if out:
         cv2.imwrite(out, frame)
@@ -91,28 +101,37 @@ def convertVideoToAscii(
     colors,
     frameAutoColor,
     colorSampleRate,
-    cols,
+    startCols,
+    endCols,
     scale,
     moreLevels,
     invert,
+    size=None,
 ):
     # init video capture
     cam = cv2.VideoCapture(str(filename))
     total_frames = int(cam.get(cv2.CAP_PROP_FRAME_COUNT))
 
     # init output video
-    success, frame = cam.read()
-    frame_pil = convertOpenCV2PIL(frame).convert("RGB")  # TODO: change if too slow
-    ascii_img = convertImageToAscii(frame_pil, colors, cols, scale, moreLevels, invert)
-    width, height = ascii_img.size[0], ascii_img.size[1]
-    video = cv2.VideoWriter(
-        str(out), cv2.VideoWriter_fourcc(*"mp4v"), fps, (width, height)
-    )
+    if not size:
+        success, frame = cam.read()
+        frame_pil = convertOpenCV2PIL(frame).convert("RGB")  # TODO: change if too slow
+        ascii_img = convertImageToAscii(
+            frame_pil, colors, startCols, scale, moreLevels, invert, size=size
+        )
+        size = ascii_img.size
+
+    video = cv2.VideoWriter(str(out), cv2.VideoWriter_fourcc(*"mp4v"), fps, size)
 
     # init progress bar
     frame_num = 0
     with tqdm(total=total_frames, ncols=75, unit="f") as pbar:
-        while success:
+        while True:
+            # get next frame if available
+            success, frame = cam.read()
+            if not success:
+                break
+
             # update the progress bar
             pbar.update(1)
 
@@ -123,19 +142,22 @@ def convertVideoToAscii(
             if frameAutoColor and frame_num % colorSampleRate == 0:
                 colors = frameAutoColor(frame)
 
+            # get number of cols
+            video_pos = frame_num / total_frames
+            cols = round((endCols - startCols) * video_pos + startCols)
+            print(video_pos)
+
             # convert image to ascii
             ascii_img = convertImageToAscii(
-                frame, colors, cols, scale, moreLevels, invert, filter=False
+                frame, colors, cols, scale, moreLevels, invert, filter=False, size=size
             )
+
+            print(ascii_img.size)
 
             # convert ascii frame from PIL to OpenCV and add to the video
             ascii_img_cv = convertPIL2OpenCV(ascii_img)
             video.write(ascii_img_cv)
 
-            # get next frame if available
-            success, frame = cam.read()
-            if not success:
-                break
             frame_num += 1
 
             # if frame_num <= 3:
@@ -173,7 +195,9 @@ def main():
     parser.add_argument(
         "-R", "--colorSampleRate", dest="colorSampleRate", type=int, nargs="?", const=-1
     )
-    parser.add_argument("-n", "--cols", dest="cols", type=int, required=False)
+    parser.add_argument(
+        "-n", "--cols", dest="cols", type=int, nargs="+", required=False
+    )
     parser.add_argument("-l", "--scale", dest="scale", type=float, required=False)
     parser.add_argument("-m", "--morelevels", dest="moreLevels", action="store_true")
     parser.add_argument("-i", "--invert", dest="invert", action="store_false")
@@ -205,15 +229,21 @@ def main():
         scale = float(args.scale)
 
     # set cols
-    cols = 80
+    startCols = 80
+    endCols = 80
     if args.cols:
-        cols = int(args.cols)
+        startCols = int(args.cols[0])
+        if len(args.cols) > 1:
+            endCols = int(args.cols[1])
+        else:
+            endCols = startCols
 
     # set fps
     fps = args.fps
     if not args.fps:
         cam = cv2.VideoCapture(str(filename))
         fps = int(cam.get(cv2.CAP_PROP_FPS))
+        print(cam.get(cv2.CAP_PROP_FPS))
         cam.release()
         cv2.destroyAllWindows()
 
@@ -223,6 +253,7 @@ def main():
         sampleRate = args.colorSampleRate
 
     # set color scheme
+    frameAutoColor = None
     if args.autoColor:
         num_of_colors = args.colorScheme or args.greyscaleScheme
         is_greyscale = args.colorScheme == None
@@ -243,13 +274,52 @@ def main():
 
     # test frame
     if args.test:
-        sample_frame = convertOpenCV2PIL(extractFrame(str(filename))).convert("RGB")
-        if frameAutoColor:
-            colors = frameAutoColor(sample_frame)
-        ascii_img = convertImageToAscii(
-            sample_frame, colors, cols, scale, args.moreLevels, args.invert
+        # get frames
+        start_frame = convertOpenCV2PIL(extractFrame(str(filename), dest=0)).convert(
+            "RGB"
         )
-        ascii_img.show()
+        mid_frame = convertOpenCV2PIL(extractFrame(str(filename), dest=0.5)).convert(
+            "RGB"
+        )
+        end_frame = convertOpenCV2PIL(extractFrame(str(filename), dest=1)).convert(
+            "RGB"
+        )
+
+        # set color
+        if frameAutoColor:
+            start_colors = frameAutoColor(start_frame)
+            mid_colors = frameAutoColor(mid_frame)
+            end_colors = frameAutoColor(end_frame)
+        else:
+            start_colors = mid_colors = end_colors = colors
+
+        start_ascii = convertImageToAscii(
+            start_frame, start_colors, startCols, scale, args.moreLevels, args.invert
+        )
+        mid_ascii = convertImageToAscii(
+            mid_frame,
+            mid_colors,
+            (startCols + endCols) // 2,
+            scale,
+            args.moreLevels,
+            args.invert,
+        )
+        end_ascii = convertImageToAscii(
+            end_frame, end_colors, endCols, scale, args.moreLevels, args.invert
+        )
+
+        start_ascii.show()
+        mid_ascii.show()
+        end_ascii.show()
+
+        # plt.figure(figsize=(6, 10))
+        # plt.subplot(3, 1, 1)
+        # plt.imshow(start_ascii)
+        # plt.subplot(3, 1, 2)
+        # plt.imshow(start_ascii)
+        # plt.subplot(3, 1, 3)
+        # plt.imshow(end_ascii)
+        # plt.show()
 
         response = input("Continue? (y/n) ".format(outFile))
         if response.upper() != "Y":
@@ -279,10 +349,12 @@ def main():
         colors,
         frameAutoColor,
         sampleRate,
-        cols,
+        startCols,
+        endCols,
         scale,
         args.moreLevels,
         args.invert,
+        size=(1280, 720),
     )
 
     # Show video

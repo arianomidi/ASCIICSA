@@ -203,7 +203,7 @@ WIDTH_SCALING_FACTOR = 0.75
 HEIGHT_SCALING_FACTOR = 8 / 11
 
 
-def text_image(aimg, cimg, inverted, font_path=None):
+def text_image(aimg, cimg, inverted, size=None, font_path=None):
     """Convert text file to a grayscale image with black characters on a white background.
 
     arguments:
@@ -266,6 +266,10 @@ def text_image(aimg, cimg, inverted, font_path=None):
             hor_pos += char_spacing
         vertical_position += line_spacing
 
+    if size:
+        # image.thumbnail(size)
+        image = image.resize(size)
+
     return image
 
 
@@ -280,6 +284,7 @@ def convertImageToAscii(
     moreLevels=True,
     invertImg=True,
     filter=True,
+    size=None,
 ):
     """
     Converts given image to an ASCII image
@@ -290,7 +295,7 @@ def convertImageToAscii(
     # get text and ANSI colors of image
     aimg, cimg = covertImageToAscii(image, colors, cols, scale, moreLevels, invertImg)
     # convert to image
-    return text_image(aimg, cimg, invertImg)
+    return text_image(aimg, cimg, invertImg, size=size)
 
 
 # main() function
