@@ -354,7 +354,7 @@ def main():
         scale,
         args.moreLevels,
         args.invert,
-        size=(1280, 720),
+        size=(960, 1696),
     )
 
     # Show video

@@ -73,10 +73,36 @@ def normalizeTiles(tiles):
 
 def filterImage(image):
     # image brightness enhancer
-    enhancer = ImageEnhance.Brightness(image)
+    # enhancer = ImageEnhance.Brightness(image)
+    enhancer = ImageEnhance.Contrast(image)
 
     factor = 1.3
     filtered_image = enhancer.enhance(factor)
+
+    # create the histogram
+    img_arr = np.array(image)
+    histogram, bin_edges = np.histogram(img_arr, bins=256, range=(0, 255))
+    fil_img_arr = np.array(filtered_image)
+    filtered_histogram, fil_bin_edges = np.histogram(
+        fil_img_arr, bins=256, range=(0, 255)
+    )
+
+    f = plt.figure()
+    f.add_subplot(1, 2, 1)
+    plt.title("Grayscale Histogram")
+    plt.xlabel("grayscale value")
+    plt.ylabel("pixels")
+    plt.xlim([0, 255])  # <- named arguments do not work here
+    plt.plot(bin_edges[0:-1], histogram)  # <- or here
+
+    f.add_subplot(1, 2, 2)
+    plt.title("Grayscale Histogram")
+    plt.xlabel("grayscale value")
+    plt.ylabel("pixels")
+    plt.xlim([0, 255])  # <- named arguments do not work here
+    plt.plot(fil_bin_edges[0:-1], filtered_histogram)  # <- or here
+
+    plt.show()
 
     # ------ TODO: remove ------
     # f = plt.figure()
@@ -113,7 +139,7 @@ def covertImageToAscii(image, colors, cols, scale, moreLevels, invertImg):
 
     # store dimensions
     W, H = image.size[0], image.size[1]
-    # print(" - input image dims: %d x %d" % (W, H))
+    print(" - input image dims: %d x %d : %.2f" % (W, H, W / H))
 
     # compute number of rows
     rows = int(H * scale * cols / W)  # TODO
@@ -122,8 +148,8 @@ def covertImageToAscii(image, colors, cols, scale, moreLevels, invertImg):
     # compute tile height based on aspect ratio and scale
     h = int(W / (scale * cols))
 
-    # print(" - cols: %f, rows: %f" % (cols, rows))
-    # print(" - tile dims: %f x %f" % (w, h))
+    print(" - cols: %d, rows: %d : %.2f" % (cols, rows, cols / rows))
+    print(" - tile dims: %d x %d" % (w, h))
 
     # check if image size is too small
     if cols > W or rows > H:
@@ -134,14 +160,14 @@ def covertImageToAscii(image, colors, cols, scale, moreLevels, invertImg):
     # image_greyscale = image.convert("L")
     im = np.array(image)
 
-    r = block_reduce(im[:, :, 0], (h, w), np.median)
-    g = block_reduce(im[:, :, 1], (h, w), np.median)
-    b = block_reduce(im[:, :, 2], (h, w), np.median)
-    tiles_rgb = np.stack((r, g, b), axis=-1)
+    # r = block_reduce(im[:, :, 0], (h, w), np.median)
+    # g = block_reduce(im[:, :, 1], (h, w), np.median)
+    # b = block_reduce(im[:, :, 2], (h, w), np.median)
+    # tiles_rgb = np.stack((r, g, b), axis=-1)
     # print(tiles_rgb.shape)
-    tiles_greyscale = np.average(tiles_rgb, axis=2, weights=[0.299, 0.587, 0.114])
-    tiles_rgb = np.rint(tiles_rgb).astype(int)
-    tiles = normalizeTiles(tiles_greyscale)
+    # tiles_greyscale = np.average(tiles_rgb, axis=2, weights=[0.299, 0.587, 0.114])
+    # tiles_rgb = np.rint(tiles_rgb).astype(int)
+    # tiles = normalizeTiles(tiles_greyscale)
 
     # print("Mean Downscale...")
     # start = time.perf_counter()
@@ -158,11 +184,11 @@ def covertImageToAscii(image, colors, cols, scale, moreLevels, invertImg):
 
     # print("OpenCV sampling...")
     # start = time.perf_counter()
-    # tiles_rgb = cv2.resize(im, (cols, rows), interpolation=cv2.INTER_AREA)
-    # print(tiles_rgb.shape)
-    # tiles_greyscale = np.average(tiles_rgb, axis=2, weights=[0.299, 0.587, 0.114])
-    # tiles_rgb = np.rint(tiles_rgb).astype(int)
-    # tiles = normalizeTiles(tiles_greyscale)
+    tiles_rgb = cv2.resize(im, (cols, rows), interpolation=cv2.INTER_AREA)
+    print(tiles_rgb.shape)
+    tiles_greyscale = np.average(tiles_rgb, axis=2, weights=[0.299, 0.587, 0.114])
+    tiles_rgb = np.rint(tiles_rgb).astype(int)
+    tiles = normalizeTiles(tiles_greyscale)
     # end = time.perf_counter()
     # print(f"Completed {end - start:0.4f} seconds")
 
@@ -199,8 +225,8 @@ def covertImageToAscii(image, colors, cols, scale, moreLevels, invertImg):
 
 # --------- TODO: refactor -------------- #
 
-WIDTH_SCALING_FACTOR = 0.75
-HEIGHT_SCALING_FACTOR = 8 / 11
+WIDTH_SCALING_FACTOR = 1
+HEIGHT_SCALING_FACTOR = 1
 
 
 def text_image(aimg, cimg, inverted, size=None, font_path=None):
@@ -219,7 +245,11 @@ def text_image(aimg, cimg, inverted, size=None, font_path=None):
     lines = aimg
 
     # choose a font (you can see more detail in my library on github)
-    large_font = 20  # get better resolution with larger size
+    if size:
+        large_font = round((3 / 4) * (2 * size[1] / len(lines)))
+        print(large_font)
+    else:
+        large_font = 20  # get better resolution with larger size
     default_font_path = (
         "fonts/SFMono-Semibold.otf" if inverted else "fonts/SFMono-Heavy.otf"
     )
@@ -237,18 +267,19 @@ def text_image(aimg, cimg, inverted, size=None, font_path=None):
     pt2px = lambda pt: int(
         round(pt * 96.0 / 72)
     )  # function that converts points to pixels
-    max_width_line = max(
-        lines, key=lambda char_arr: font.getsize("".join(char_arr))[0]
-    )  # get line with largest width
+
     # max height is adjusted down because it's too large visually for spacing
     test_string = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnop.,;:'/|{}[]()&$%#@"
-    max_height = pt2px(font.getsize(test_string)[1])
-    max_width = pt2px(font.getsize("".join(max_width_line))[0])
-    char_width = round(max_width / len(max_width_line))
+    max_height = font.getsize(test_string)[1] * 0.9
+    print(max_height)
+    line_width = font.getsize("".join(lines[0]))[0]  # get line width
+    char_width = round(line_width / len(lines[0]))
+
     height = int(
         (max_height) * len(lines) * HEIGHT_SCALING_FACTOR
     )  # perfect or a little oversized
-    width = int(max_width * WIDTH_SCALING_FACTOR)  # a little oversized
+    width = int(line_width * WIDTH_SCALING_FACTOR)  # a little oversized
+
     image = Image.new("RGB", (width, height), color=background_color(inverted))
     draw = ImageDraw.Draw(image)
 
@@ -259,6 +290,28 @@ def text_image(aimg, cimg, inverted, size=None, font_path=None):
     )  # reduced spacing seems better
     char_spacing = round(char_width * WIDTH_SCALING_FACTOR)
 
+    # max_width_line = max(
+    #     lines, key=lambda char_arr: font.getsize("".join(char_arr))[0]
+    # )  # get line with largest width
+    # # max height is adjusted down because it's too large visually for spacing
+    # test_string = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnop.,;:'/|{}[]()&$%#@"
+    # max_height = pt2px(font.getsize(test_string)[1])
+    # max_width = pt2px(font.getsize("".join(max_width_line))[0])
+    # char_width = round(max_width / len(max_width_line))
+    # height = int(
+    #     (max_height) * len(lines) * HEIGHT_SCALING_FACTOR
+    # )  # perfect or a little oversized
+    # width = int(max_width * WIDTH_SCALING_FACTOR)  # a little oversized
+    # image = Image.new("RGB", (width, height), color=background_color(inverted))
+    # draw = ImageDraw.Draw(image)
+
+    # # draw each line of text
+    # vertical_position = 0
+    # line_spacing = round(
+    #     max_height * HEIGHT_SCALING_FACTOR
+    # )  # reduced spacing seems better
+    # char_spacing = round(char_width * WIDTH_SCALING_FACTOR)
+
     for line, line_colors in zip(lines, cimg):
         hor_pos = 0
         for c, color in zip(line, line_colors):
@@ -267,8 +320,14 @@ def text_image(aimg, cimg, inverted, size=None, font_path=None):
         vertical_position += line_spacing
 
     if size:
+        print("{} : {}".format(image.size, image.width / image.height))
         # image.thumbnail(size)
         image = image.resize(size)
+        # image_cv = np.array(image)
+        # image_cv = cv2.cvtColor(image_cv, cv2.COLOR_RGB2BGR)
+        # image_cv = cv2.resize(image_cv, size, interpolation=cv2.INTER_AREA)
+        # image = cv2.cvtColor(image_cv, cv2.COLOR_BGR2RGB)
+        # image = Image.fromarray(image)
 
     return image
 
@@ -390,7 +449,14 @@ def main():
     )
 
     # make image from text
-    image = text_image(aimg, cimg, args.invert)
+    image = text_image(
+        aimg, cimg, args.invert, size=(1920, int((1920 / image.width) * image.height))
+    )
+    # image = text_image(aimg, cimg, args.invert)
+    print(
+        " - out dims: %d x %d : %.2f"
+        % (image.size[0], image.size[1], image.size[0] / image.size[1])
+    )
     end = time.perf_counter()
     print(f"Text to Image {end - start:0.4f} seconds")
 
