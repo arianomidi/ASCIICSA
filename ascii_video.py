@@ -243,9 +243,23 @@ def main():
     if not args.fps:
         cam = cv2.VideoCapture(str(filename))
         fps = int(cam.get(cv2.CAP_PROP_FPS))
-        print(cam.get(cv2.CAP_PROP_FPS))
+        print(fps)
         cam.release()
         cv2.destroyAllWindows()
+
+    # set output size
+    resoution = 1920
+
+    cam = cv2.VideoCapture(str(filename))
+    width = int(cam.get(3))
+    height = int(cam.get(4))
+    cam.release()
+    cv2.destroyAllWindows()
+
+    if width >= height:
+        size = (resoution, round((resoution / width) * height))
+    else:
+        size = (round((resoution / height) * width), resoution)
 
     # set sample rate
     sampleRate = fps
@@ -294,7 +308,13 @@ def main():
             start_colors = mid_colors = end_colors = colors
 
         start_ascii = convertImageToAscii(
-            start_frame, start_colors, startCols, scale, args.moreLevels, args.invert
+            start_frame,
+            start_colors,
+            startCols,
+            scale,
+            args.moreLevels,
+            args.invert,
+            size=size,
         )
         mid_ascii = convertImageToAscii(
             mid_frame,
@@ -303,9 +323,16 @@ def main():
             scale,
             args.moreLevels,
             args.invert,
+            size=size,
         )
         end_ascii = convertImageToAscii(
-            end_frame, end_colors, endCols, scale, args.moreLevels, args.invert
+            end_frame,
+            end_colors,
+            endCols,
+            scale,
+            args.moreLevels,
+            args.invert,
+            size=size,
         )
 
         start_ascii.show()
@@ -354,7 +381,7 @@ def main():
         scale,
         args.moreLevels,
         args.invert,
-        size=(960, 1696),
+        size=size,
     )
 
     # Show video

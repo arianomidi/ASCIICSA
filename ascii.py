@@ -277,7 +277,7 @@ def text_image(aimg, cimg, inverted, size=None, font_path=None):
         )
     )
 
-    height = round((max_height) * len(lines))  # perfect or a little oversized
+    height = round(round(max_height) * len(lines))  # perfect or a little oversized
     width = round(line_width * WIDTH_SCALING_FACTOR)  # a little oversized
 
     image = Image.new("RGB", (width, height), color=background_color(inverted))
@@ -447,10 +447,15 @@ def main():
         image, colors, cols, scale, args.moreLevels, args.invert
     )
 
+    # set output size
+    resoution = 1920
+    if image.width >= image.height:
+        size = (resoution, round((resoution / image.width) * image.height))
+    else:
+        size = (round((resoution / image.height) * image.width), resoution)
+
     # make image from text
-    image = text_image(
-        aimg, cimg, args.invert, size=(1920, int((1920 / image.width) * image.height))
-    )
+    image = text_image(aimg, cimg, args.invert, size=size)
     # image = text_image(aimg, cimg, args.invert)
     print(
         " - out dims: %d x %d : %.2f"
