@@ -145,26 +145,17 @@ def convertVideoToAscii(
             # get number of cols
             video_pos = frame_num / total_frames
             cols = round((endCols - startCols) * video_pos + startCols)
-            print(video_pos)
 
             # convert image to ascii
             ascii_img = convertImageToAscii(
                 frame, colors, cols, scale, moreLevels, invert, filter=False, size=size
             )
 
-            print(ascii_img.size)
-
             # convert ascii frame from PIL to OpenCV and add to the video
             ascii_img_cv = convertPIL2OpenCV(ascii_img)
             video.write(ascii_img_cv)
 
             frame_num += 1
-
-            # if frame_num <= 3:
-            #     ascii_img.show()
-            #     frame.show()
-            # print(frame_num)
-            # frame_num += 1
 
     # Release all space and windows once done
     cam.release()
@@ -242,7 +233,7 @@ def main():
     fps = args.fps
     if not args.fps:
         cam = cv2.VideoCapture(str(filename))
-        fps = int(cam.get(cv2.CAP_PROP_FPS))
+        fps = round(cam.get(cv2.CAP_PROP_FPS))
         print(fps)
         cam.release()
         cv2.destroyAllWindows()
@@ -366,7 +357,6 @@ def main():
     outFile.parent.mkdir(parents=True, exist_ok=True)
 
     print("generating ASCII art...")
-    start = time.perf_counter()
 
     # Convert video to ascii
     convertVideoToAscii(
@@ -391,68 +381,6 @@ def main():
         else:
             opener = "open" if sys.platform == "darwin" else "xdg-open"
             subprocess.call([opener, outFile])
-
-    end = time.perf_counter()
-    print(f"Completed {end - start:0.4f} seconds")
-    # # ------------------------------------------------------------------#
-
-    # print("Converting video to frames...")
-    # start = time.perf_counter()
-
-    # # Check if file given is valid
-    # if not filename.exists():
-    #     print("ERROR : file does not exist.")
-    #     exit(0)
-
-    # # Create the frame dir if does not exist
-    # frames_out.mkdir(parents=True, exist_ok=True)
-
-    # # Convert video to frames
-    # vid_to_img(filename, frames_out)
-    # print(" - Frames saved at '{}'".format(frames_out))
-
-    # end = time.perf_counter()
-    # print(f"Completed {end - start:0.4f} seconds")
-
-    # # ------------------------------------------------------------------#
-
-    # print("Converting frames to ASCII...")
-    # start = time.perf_counter()
-
-    # # Create the frame dir if does not exist
-    # ascii_out.mkdir(parents=True, exist_ok=True)
-
-    # # Get all the frame paths
-    # frames = sorted(frames_out.glob("*"))
-
-    # for frame in frames:
-    #     # convert image to ascii txt
-    #     aimg, cimg = covertImageToAscii(
-    #         str(frame), color_schemes["grayscale_5"], 120, 0.5, True, True
-    #     )
-
-    #     # make image from text
-    #     image = text_image(aimg, cimg, True)
-
-    #     # save image
-    #     img_name = ascii_out / "{}_ascii.png".format(frame.stem)
-    #     image.save(img_name)
-
-    # end = time.perf_counter()
-    # print(f"Completed {end - start:0.4f} seconds")
-
-    # # ------------------------------------------------------------------#
-
-    # print("Converting frames to video...")
-    # start = time.perf_counter()
-
-    # # Convert frames to video
-    # img_to_vid(ascii_out, vid_out, fps)
-
-    # end = time.perf_counter()
-    # print(f"Completed {end - start:0.4f} seconds")
-
-    # # ------------------------------------------------------------------#
 
 
 # call main
