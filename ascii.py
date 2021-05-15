@@ -79,30 +79,30 @@ def filterImage(image):
     factor = 1.3
     filtered_image = enhancer.enhance(factor)
 
-    # create the histogram
-    img_arr = np.array(image)
-    histogram, bin_edges = np.histogram(img_arr, bins=256, range=(0, 255))
-    fil_img_arr = np.array(filtered_image)
-    filtered_histogram, fil_bin_edges = np.histogram(
-        fil_img_arr, bins=256, range=(0, 255)
-    )
+    # # create the histogram
+    # img_arr = np.array(image)
+    # histogram, bin_edges = np.histogram(img_arr, bins=256, range=(0, 255))
+    # fil_img_arr = np.array(filtered_image)
+    # filtered_histogram, fil_bin_edges = np.histogram(
+    #     fil_img_arr, bins=256, range=(0, 255)
+    # )
 
-    f = plt.figure()
-    f.add_subplot(1, 2, 1)
-    plt.title("Grayscale Histogram")
-    plt.xlabel("grayscale value")
-    plt.ylabel("pixels")
-    plt.xlim([0, 255])  # <- named arguments do not work here
-    plt.plot(bin_edges[0:-1], histogram)  # <- or here
+    # f = plt.figure()
+    # f.add_subplot(1, 2, 1)
+    # plt.title("Grayscale Histogram")
+    # plt.xlabel("grayscale value")
+    # plt.ylabel("pixels")
+    # plt.xlim([0, 255])  # <- named arguments do not work here
+    # plt.plot(bin_edges[0:-1], histogram)  # <- or here
 
-    f.add_subplot(1, 2, 2)
-    plt.title("Grayscale Histogram")
-    plt.xlabel("grayscale value")
-    plt.ylabel("pixels")
-    plt.xlim([0, 255])  # <- named arguments do not work here
-    plt.plot(fil_bin_edges[0:-1], filtered_histogram)  # <- or here
+    # f.add_subplot(1, 2, 2)
+    # plt.title("Grayscale Histogram")
+    # plt.xlabel("grayscale value")
+    # plt.ylabel("pixels")
+    # plt.xlim([0, 255])  # <- named arguments do not work here
+    # plt.plot(fil_bin_edges[0:-1], filtered_histogram)  # <- or here
 
-    plt.show()
+    # plt.show()
 
     # ------ TODO: remove ------
     # f = plt.figure()
@@ -264,21 +264,21 @@ def text_image(aimg, cimg, inverted, size=None, font_path=None):
         print("Could not use chosen font. Using default.")
 
     # make the background image based on the combination of font and lines
-    pt2px = lambda pt: int(
-        round(pt * 96.0 / 72)
-    )  # function that converts points to pixels
+    pt2px = lambda pt: pt * 4 / 3  # function that converts points to pixels
 
-    # max height is adjusted down because it's too large visually for spacing
-    test_string = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnop.,;:'/|{}[]()&$%#@"
-    max_height = font.getsize(test_string)[1] * 0.9
-    print(max_height)
     line_width = font.getsize("".join(lines[0]))[0]  # get line width
-    char_width = round(line_width / len(lines[0]))
+    # max height is adjusted down because it's too large visually for spacing
+    max_height = (size[1] / size[0]) * (line_width / len(lines))
+    char_width = line_width / len(lines[0])
 
-    height = int(
-        (max_height) * len(lines) * HEIGHT_SCALING_FACTOR
-    )  # perfect or a little oversized
-    width = int(line_width * WIDTH_SCALING_FACTOR)  # a little oversized
+    print(
+        "size={:.2f} -> c_w={:.2f}, max_c_h={:.2f}, ratio={:.2f}".format(
+            pt2px(large_font), char_width, max_height, char_width / max_height
+        )
+    )
+
+    height = round((max_height) * len(lines))  # perfect or a little oversized
+    width = round(line_width * WIDTH_SCALING_FACTOR)  # a little oversized
 
     image = Image.new("RGB", (width, height), color=background_color(inverted))
     draw = ImageDraw.Draw(image)
@@ -321,13 +321,10 @@ def text_image(aimg, cimg, inverted, size=None, font_path=None):
 
     if size:
         print("{} : {}".format(image.size, image.width / image.height))
-        # image.thumbnail(size)
-        image = image.resize(size)
-        # image_cv = np.array(image)
-        # image_cv = cv2.cvtColor(image_cv, cv2.COLOR_RGB2BGR)
-        # image_cv = cv2.resize(image_cv, size, interpolation=cv2.INTER_AREA)
-        # image = cv2.cvtColor(image_cv, cv2.COLOR_BGR2RGB)
-        # image = Image.fromarray(image)
+        # image = image.resize(size)
+        image_cv = np.array(image)
+        image_cv = cv2.resize(image_cv, size, interpolation=cv2.INTER_AREA)
+        image = Image.fromarray(image_cv)
 
     return image
 
@@ -390,6 +387,8 @@ def main():
     parser.add_argument("-H", "--hide", dest="hide", action="store_true")
     parser.add_argument("-s", "--save", dest="save", action="store_true")
     parser.add_argument("-p", "--print", dest="print", action="store_true")
+
+    # parser.add_argument("-l", "--scale", dest="scale", type=float, required=False)
 
     # parse args
     args = parser.parse_args()
