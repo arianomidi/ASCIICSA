@@ -2,6 +2,7 @@ import cv2
 import time
 import os, sys, subprocess
 from pathlib import Path
+from shutil import rmtree
 from PIL import Image
 import numpy as np
 import matplotlib.pyplot as plt
@@ -51,48 +52,99 @@ def extractFrame(filename, out=None, dest=0.5):
     return frame
 
 
-def img_to_vid(in_path, out, fps):
+def boomerang(filename, out=None, fps=24, progress=True):
+    file = Path(str(filename))
+    # Check if file given is valid
+    if not file.exists():
+        print("ERROR: Video does not exist.")
+        exit(0)
+
+    frames_path = file.parent / "frames"
+    frames_path.mkdir(parents=True, exist_ok=True)
+
+    # create the frames
+    vid_to_img(file, frames_path, progress_bar=progress)
+
+    # get frames
+    frames = sorted(frames_path.glob("*"))
+    # create boomerang effect by looping the frames
+    frames.extend(reversed(frames))
+
+    # save frames to video
+    out = out or Path("{}/{}_boomerang.mp4".format(file.parent, file.stem))
+    img_to_vid(out, fps, frames=frames, progress_bar=progress)
+
+    # delete frame dir
+    try:
+        rmtree(frames_path)
+    except OSError as e:
+        print("Error: %s : %s" % (frames_path, e.strerror))
+
+
+def img_to_vid(out, fps, in_path=None, frames=None, progress_bar=False):
     # Get all the frame paths
-    frames = sorted(in_path.glob("*"))
+    if in_path:
+        frames = sorted(in_path.glob("*"))
+    elif not frames:
+        print("ERROR: 'img_to_vid' - input path or frames not given.")
+        exit(0)
 
     # Get the dimensions of the video
     frame = cv2.imread(str(frames[0]))
-    height, width, layers = frame.shape
+    height, width, _ = frame.shape
 
     video = cv2.VideoWriter(
         str(out), cv2.VideoWriter_fourcc(*"mp4v"), fps, (width, height)
     )
 
-    for frame in frames:
-        video.write(cv2.imread(str(frame)))
+    # create progress bar
+    with tqdm(
+        frames,
+        desc="Creating boomerang",
+        ncols=75,
+        unit="f",
+        disable=(not progress_bar),
+    ) as pbar:
+        for frame in pbar:
+            video.write(cv2.imread(str(frame)))
 
     cv2.destroyAllWindows()
     video.release()
 
 
-def vid_to_img(filename, out):
+def vid_to_img(filename, out, progress_bar=False):
     # init video capture and frame number
     cam = cv2.VideoCapture(str(filename))
+    total_frames = round(cam.get(cv2.CAP_PROP_FRAME_COUNT))
     currentframe = 0
 
-    while True:
+    with tqdm(
+        total=total_frames,
+        desc="Converting video to frames",
+        ncols=75,
+        unit="f",
+        disable=(not progress_bar),
+    ) as pbar:
+        while True:
+            # reading from frame
+            ret, frame = cam.read()
 
-        # reading from frame
-        ret, frame = cam.read()
+            if ret:
+                num = str(currentframe).zfill(6)
+                # if video is still left continue creating images
+                name = out / "frame{}.jpg".format(num)
 
-        if ret:
-            num = str(currentframe).zfill(6)
-            # if video is still left continue creating images
-            name = out / "frame{}.jpg".format(num)
+                # writing the extracted images
+                cv2.imwrite(str(name), frame)
 
-            # writing the extracted images
-            cv2.imwrite(str(name), frame)
+                # increasing counter so that it will
+                # show how many frames are created
+                currentframe += 1
 
-            # increasing counter so that it will
-            # show how many frames are created
-            currentframe += 1
-        else:
-            break
+                # update the progress bar
+                pbar.update(1)
+            else:
+                break
 
     # Release all space and windows once done
     cam.release()
@@ -115,7 +167,7 @@ def convertVideoToAscii(
 ):
     # init video capture
     cam = cv2.VideoCapture(str(filename))
-    total_frames = int(cam.get(cv2.CAP_PROP_FRAME_COUNT))
+    total_frames = round(cam.get(cv2.CAP_PROP_FRAME_COUNT))
 
     # init output video
     # TODO: remove for getDefaultSize()
@@ -193,17 +245,18 @@ def movingAsciiImage(
     frame_arr = np.array(image).astype(np.int32)
 
     max_val = 255
-    min_val = 1
+    min_val = 0
     mask = (min_val <= img_arr) & (img_arr <= max_val)
     inc_mask = img_arr <= max_val
 
-    bg_hue = 0 if invert else 255
-    bg_inc = inc if invert else -inc
-    # dec_mask = img_arr >= max_val
+    # bg_hue = 0 if invert else 255
+    # bg_inc = inc if invert else -inc
 
     # init progress bar
     frame_num = 0
-    with tqdm(total=total_frames, ncols=75, unit="f") as pbar:
+    with tqdm(
+        desc="Creating animated ASCII Image", total=total_frames, ncols=75, unit="f"
+    ) as pbar:
         while frame_num < total_frames:
             # update the progress bar
             pbar.update(1)
@@ -225,16 +278,16 @@ def movingAsciiImage(
                 "RGB"
             )  # TODO: change if too slow
 
-            # background color
-            bg_hue += bg_inc
-            if bg_hue <= 0:
-                bg_inc = inc
-                bg_hue = 0
-            elif bg_hue >= 255:
-                bg_inc = -inc
-                bg_hue = 255
+            # # background color
+            # bg_hue += bg_inc
+            # if bg_hue <= 0:
+            #     bg_inc = -bg_inc
+            #     bg_hue = 0
+            # elif bg_hue >= 255:
+            #     bg_inc = -bg_inc
+            #     bg_hue = 255
 
-            bg_color = (bg_hue, bg_hue, bg_hue)
+            # bg_color = (bg_hue, bg_hue, bg_hue)
 
             # convert image to ascii
             ascii_img = convertImageToAscii(
@@ -246,7 +299,7 @@ def movingAsciiImage(
                 invert,
                 filter=True,
                 size=size,
-                bg_color=bg_color,
+                # bg_color=bg_color,
             )
 
             # convert ascii frame from PIL to OpenCV and add to the video
@@ -261,16 +314,18 @@ def movingAsciiImage(
 
 
 def test():
-    filename = Path("data/fire.jpg")
+    filename = Path("data/man_outline.jpg")
+    out = Path("out/moving_image/man_outline.mp4")
     image = Image.open(str(filename)).convert("RGB")
+    fps = 16
 
     movingAsciiImage(
         image,
-        "out/moving_image/test.mp4",
-        16,
+        out,
+        fps,
         256,
         defaultPalatte(),
-        160,
+        120,
         0.6,
         True,
         True,
