@@ -7,11 +7,20 @@ import string
 from PIL import Image, ImageFont, ImageDraw
 
 ascii_chars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!\"#$%&'()*+,-./:;<=>?@[\]^_`{|}~ "
+ascii_letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+ascii_lowercase = "gdbqpmhwkaeyounjslfictzxrv"
+ascii_uppercase = "QBMDRWGNOHSUKEPCAZXVJFIYTL"
+ascii_upper_lower = "QBMDRWGNOHSUKEPCAZXVJFIYTLdbqpmhwkaeyounjslfictzxrv"
+gscale1 = "$@B%8&WM#*oahkbdpqwmZO0QLCJUYXzcvunxrjft/\|()1{}[]?-_+~<>i!lI;:,\"^`'. "
+
+
+# 10 levels of gray
+gscale2 = "@%#*+=-:. "
 
 
 def getCharDensity(char):
     font_path = "fonts/SFMono-Semibold.otf"
-    font_size = 50
+    font_size = 200
     try:
         font = ImageFont.truetype(font_path, size=font_size)
     except IOError:
@@ -42,7 +51,6 @@ def getCharDensity(char):
     # calc ratio
     density = white / black
     # print(f"ratio: {ratio}")
-
     return density
 
 
@@ -52,7 +60,7 @@ def orderChars(chars):
         density = getCharDensity(c)
         char_dict.append((c, density))
 
-    char_dict.sort(key=lambda x: x[1])
+    char_dict.sort(key=lambda x: x[1], reverse=True)
 
     ordered_chars = [x[0] for x in char_dict]
     ordered_chars = "".join(ordered_chars)
@@ -61,7 +69,14 @@ def orderChars(chars):
 
 
 def main():
-    orderChars(ascii_chars)
+    # orderChars(ascii_chars)
+
+    print(string.ascii_letters)
+    orderChars(string.ascii_uppercase)
+    # orderChars(gscale1)
+    # print(gscale1)
+    # orderChars(gscale2)
+    # print(gscale2)
 
 
 # call main

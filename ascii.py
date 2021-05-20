@@ -23,10 +23,16 @@ from color_extraction import *
 # http://paulbourke.net/dataformats/asciiart/
 
 # 70 levels of gray
-gscale1 = "$@B%8&WM#*oahkbdpqwmZO0QLCJUYXzcvunxrjft/\|()1{}[]?-_+~<>i!lI;:,\"^`'. "
+# gscale1 = "$@B%8&WM#*oahkbdpqwmZO0QLCJUYXzcvunxrjft/\|()1{}[]?-_+~<>i!lI;:,\"^`'. "
+gscale1 = "QB0M8$WO&#dbqpUmC%@ZXhwkaoJI1unj{]}Ylf[*ictzxr?L|v)(\/+<>^!;\"~:-_,'.` "
 
 # 10 levels of gray
-gscale2 = "@%#*+=-:. "
+# gscale1 = "@%#*+=-:. "
+# gscale1 = "#%@*=+:-. "
+# gscale1 = "QBMgDRWGNOHdSbqpUKEmPCAZXhwkVaeyoJFIunjsYlfTictzxrLv "
+# gscale1 = "QBMDRWGNOHSUKEPCAZXVJFIYTLdbqpmhwkaeyounjslfictzxrv "
+# gscale1 = "gdbqpmhwkaeyounjslfictzxrv "
+# gscale1 = "QBMDRWGNOHSUKEPCAZXVJFIYTL "
 # gscale2 = "ARIANomidi"
 
 # sampling methods
@@ -70,7 +76,7 @@ def filterImage(image):
     # enhancer = ImageEnhance.Brightness(image)
     enhancer = ImageEnhance.Contrast(image)
 
-    factor = 1.3
+    factor = 1.2
     filtered_image = enhancer.enhance(factor)
 
     # # create the histogram
@@ -115,6 +121,9 @@ def defaultPalatte(shadeCount=8, isColor=False):
     if isColor:
         palatte = ansi16_rgb()
     else:
+        if shadeCount == 1:
+            return [(255, 255, 255)]
+
         palatte = []
         for i in range(shadeCount):
             color = int(i * 255 / (shadeCount - 1))
@@ -232,7 +241,7 @@ def covertImageToAscii(
 
 
 # --------- TODO: refactor -------------- #
-def text_image(aimg, cimg, inverted, size, font_path=None):
+def text_image(aimg, cimg, inverted, size, bg_color=None, font_path=None):
     """Convert text file to a grayscale image with black characters on a white background.
 
     arguments:
@@ -261,7 +270,8 @@ def text_image(aimg, cimg, inverted, size, font_path=None):
     # create new image
     height = round(char_height * len(aimg))
     width = round(line_width)
-    image = Image.new("RGB", (width, height), color=background_color(inverted))
+    bg_color = bg_color or background_color(inverted)
+    image = Image.new("RGB", (width, height), color=bg_color)
     draw = ImageDraw.Draw(image)
 
     # draw each line of text
@@ -301,6 +311,7 @@ def convertImageToAscii(
     invertImg=True,
     filter=True,
     size=None,
+    bg_color=None,
 ):
     """
     Converts given image to an ASCII image
@@ -311,8 +322,9 @@ def convertImageToAscii(
         image = filterImage(image)
     # get text and ANSI colors of image
     aimg, cimg = covertImageToAscii(image, colors, cols, scale, moreLevels, invertImg)
+
     # convert to image
-    return text_image(aimg, cimg, invertImg, size)
+    return text_image(aimg, cimg, invertImg, size, bg_color=bg_color)
 
 
 # main() function
@@ -339,10 +351,17 @@ def main():
     parser.add_argument("-n", "--cols", dest="cols", type=int, required=False)
     parser.add_argument("-l", "--scale", dest="scale", type=float, required=False)
     parser.add_argument(
-        "-m", "--morelevels", dest="moreLevels", action="store_true"
-    )  # TODO: remove
+        "-m",
+        "--mode",
+        dest="mode",
+        default="all",
+        choices=["servers", "storage", "all"],
+        required=False,
+    )
     parser.add_argument("-i", "--invert", dest="invert", action="store_false")
-    parser.add_argument("-r", "--resolution", dest="resolution", type=int, default=1920)
+    parser.add_argument(
+        "-r", "--resolution", dest="resolution", type=int, default=1920, required=False
+    )
 
     parser.add_argument("-o", "--out", dest="outFile", required=False)
     parser.add_argument("-O", "--imgout", dest="imgOutFile", required=False)
@@ -402,7 +421,7 @@ def main():
 
     # convert image to ascii txt
     aimg, cimg = covertImageToAscii(
-        image, colors, cols, scale, args.moreLevels, args.invert
+        image, colors, cols, scale, True, args.invert  # TODO: morleveles
     )
 
     # make image from text

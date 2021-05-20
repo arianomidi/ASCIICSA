@@ -9,7 +9,12 @@ from tqdm import tqdm, trange
 import argparse
 
 from ansi import *
-from ascii import convertImageToAscii, color_schemes, autoColor
+from ascii import (
+    convertImageToAscii,
+    autoColor,
+    autoSize,
+    defaultPalatte,
+)
 
 
 def convertOpenCV2PIL(img_cv):
@@ -113,6 +118,7 @@ def convertVideoToAscii(
     total_frames = int(cam.get(cv2.CAP_PROP_FRAME_COUNT))
 
     # init output video
+    # TODO: remove for getDefaultSize()
     if not size:
         success, frame = cam.read()
         frame_pil = convertOpenCV2PIL(frame).convert("RGB")  # TODO: change if too slow
@@ -161,6 +167,115 @@ def convertVideoToAscii(
     cam.release()
     video.release()
     cv2.destroyAllWindows()
+
+
+def movingAsciiImage(
+    image,
+    out,
+    fps,
+    total_frames,
+    colors,
+    cols,
+    scale,
+    moreLevels,
+    invert,
+    size=None,
+):
+
+    # init output video
+    video = cv2.VideoWriter(str(out), cv2.VideoWriter_fourcc(*"mp4v"), fps, size)
+    image = image.resize(size)
+
+    # set increase
+    inc = 2
+    image = image.convert("L")
+    img_arr = np.array(image).astype(np.int32)
+    frame_arr = np.array(image).astype(np.int32)
+
+    max_val = 255
+    min_val = 1
+    mask = (min_val <= img_arr) & (img_arr <= max_val)
+    inc_mask = img_arr <= max_val
+
+    bg_hue = 0 if invert else 255
+    bg_inc = inc if invert else -inc
+    # dec_mask = img_arr >= max_val
+
+    # init progress bar
+    frame_num = 0
+    with tqdm(total=total_frames, ncols=75, unit="f") as pbar:
+        while frame_num < total_frames:
+            # update the progress bar
+            pbar.update(1)
+
+            # get next frame if available
+            np.putmask(frame_arr, mask & inc_mask, frame_arr + inc)
+            np.putmask(frame_arr, mask & ~inc_mask, frame_arr - inc)
+            # frame_arr = np.where(mask & inc_mask, frame_arr + inc, frame_arr - inc)
+            # frame_arr = np.where(mask & dec_mask, frame_arr - inc, frame_arr)
+            inc_mask = np.logical_or(frame_arr <= min_val, inc_mask)
+            inc_mask = np.logical_and(frame_arr < max_val, inc_mask)
+            # dec_mask = np.logical_or(frame_arr >= max_val, dec_mask)
+            # dec_mask = np.logical_and(frame_arr > min_val, dec_mask)
+
+            frame_arr = np.clip(frame_arr, 0, 255)
+
+            # convert OpenCV image to PIL and to greyscale
+            frame = Image.fromarray(frame_arr).convert(
+                "RGB"
+            )  # TODO: change if too slow
+
+            # background color
+            bg_hue += bg_inc
+            if bg_hue <= 0:
+                bg_inc = inc
+                bg_hue = 0
+            elif bg_hue >= 255:
+                bg_inc = -inc
+                bg_hue = 255
+
+            bg_color = (bg_hue, bg_hue, bg_hue)
+
+            # convert image to ascii
+            ascii_img = convertImageToAscii(
+                frame,
+                colors,
+                cols,
+                scale,
+                moreLevels,
+                invert,
+                filter=True,
+                size=size,
+                bg_color=bg_color,
+            )
+
+            # convert ascii frame from PIL to OpenCV and add to the video
+            ascii_img_cv = convertPIL2OpenCV(ascii_img)
+            video.write(ascii_img_cv)
+
+            frame_num += 1
+
+    # Release all space and windows once done
+    video.release()
+    cv2.destroyAllWindows()
+
+
+def test():
+    filename = Path("data/fire.jpg")
+    image = Image.open(str(filename)).convert("RGB")
+
+    movingAsciiImage(
+        image,
+        "out/moving_image/test.mp4",
+        16,
+        256,
+        defaultPalatte(),
+        160,
+        0.6,
+        True,
+        True,
+        autoSize(image),
+    )
 
 
 def main():
@@ -385,4 +500,4 @@ def main():
 
 # call main
 if __name__ == "__main__":
-    main()
+    test()
