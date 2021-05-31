@@ -16,6 +16,7 @@ from ascii import (
     autoSize,
     defaultPalatte,
 )
+from char_density import *
 
 
 def convertOpenCV2PIL(img_cv):
@@ -161,7 +162,7 @@ def convertVideoToAscii(
     startCols,
     endCols,
     scale,
-    moreLevels,
+    chars,
     invert,
     size=None,
 ):
@@ -175,7 +176,7 @@ def convertVideoToAscii(
         success, frame = cam.read()
         frame_pil = convertOpenCV2PIL(frame).convert("RGB")  # TODO: change if too slow
         ascii_img = convertImageToAscii(
-            frame_pil, colors, startCols, scale, moreLevels, invert, size=size
+            frame_pil, colors, startCols, scale, chars, invert, size=size
         )
         size = ascii_img.size
 
@@ -206,7 +207,7 @@ def convertVideoToAscii(
 
             # convert image to ascii
             ascii_img = convertImageToAscii(
-                frame, colors, cols, scale, moreLevels, invert, filter=False, size=size
+                frame, colors, cols, scale, chars, invert, filter=False, size=size
             )
 
             # convert ascii frame from PIL to OpenCV and add to the video
@@ -229,7 +230,7 @@ def movingAsciiImage(
     colors,
     cols,
     scale,
-    moreLevels,
+    chars,
     invert,
     size=None,
 ):
@@ -295,11 +296,10 @@ def movingAsciiImage(
                 colors,
                 cols,
                 scale,
-                moreLevels,
+                chars,
                 invert,
                 filter=True,
                 size=size,
-                # bg_color=bg_color,
             )
 
             # convert ascii frame from PIL to OpenCV and add to the video
@@ -314,8 +314,8 @@ def movingAsciiImage(
 
 
 def test():
-    filename = Path("data/man_outline.jpg")
-    out = Path("out/moving_image/man_outline.mp4")
+    filename = Path("data/billevans.jpg")
+    out = Path("out/moving_image/bill_test_ascii_nearest.mp4")
     image = Image.open(str(filename)).convert("RGB")
     fps = 16
 
@@ -329,7 +329,7 @@ def test():
         0.6,
         True,
         True,
-        autoSize(image),
+        size=autoSize(image),
     )
 
 
@@ -359,14 +359,18 @@ def main():
     parser.add_argument(
         "-n", "--cols", dest="cols", type=int, nargs="+", required=False
     )
-    parser.add_argument("-l", "--scale", dest="scale", type=float, required=False)
+    parser.add_argument("-l", "--scale", dest="scale", type=float, default=0.6)
     parser.add_argument("-m", "--morelevels", dest="moreLevels", action="store_true")
     parser.add_argument("-i", "--invert", dest="invert", action="store_false")
     parser.add_argument("-f", "--fps", dest="fps", type=int, required=False)
+    parser.add_argument("-t", "--chars", dest="chars", default=ascii_chars)
+    parser.add_argument(
+        "-r", "--resolution", dest="resolution", type=int, default=1920, required=False
+    )
 
     parser.add_argument("-o", "--out", dest="outFile", required=False)
     parser.add_argument("-H", "--hide", dest="hide", action="store_true")
-    parser.add_argument("-t", "--test", dest="test", action="store_true")
+    parser.add_argument("-T", "--test", dest="test", action="store_true")
 
     # parse args
     args = parser.parse_args()
@@ -383,11 +387,9 @@ def main():
     if args.outFile:
         outFile = Path(args.outFile)
 
-    # set scale default as 0.5 which suits
+    # set scale default as 0.6 which suits
     # a Courier font
-    scale = 0.5
-    if args.scale:
-        scale = float(args.scale)
+    scale = args.scale
 
     # set cols
     startCols = 80
@@ -404,12 +406,11 @@ def main():
     if not args.fps:
         cam = cv2.VideoCapture(str(filename))
         fps = round(cam.get(cv2.CAP_PROP_FPS))
-        print(fps)
         cam.release()
         cv2.destroyAllWindows()
 
     # set output size
-    resoution = 1920
+    resolution = args.resolution
 
     cam = cv2.VideoCapture(str(filename))
     width = int(cam.get(3))
@@ -418,14 +419,39 @@ def main():
     cv2.destroyAllWindows()
 
     if width >= height:
-        size = (resoution, round((resoution / width) * height))
+        size = (resolution, round((resolution / width) * height))
     else:
-        size = (round((resoution / height) * width), resoution)
+        size = (round((resolution / height) * width), resolution)
 
     # set sample rate
     sampleRate = fps
     if args.colorSampleRate:
         sampleRate = args.colorSampleRate
+
+    # sort chars by char density
+    if args.chars == "printable":
+        chars = ascii_chars
+    elif args.chars == "alphanumeric":
+        chars = ascii_alphanumeric
+    elif args.chars == "alpha":
+        chars = ascii_alpha
+    elif args.chars == "lower":
+        chars = ascii_lowercase
+    elif args.chars == "upper":
+        chars = ascii_uppercase
+    elif args.chars == "tech":
+        chars = ascii_tech
+    elif args.chars == "numeric":
+        chars = ascii_numeric
+    elif args.chars == "symbols":
+        chars = ascii_symbols
+    elif args.chars == "std1":
+        chars = ascii_std_1
+    elif args.chars == "std2":
+        chars = ascii_std_2
+    else:
+        chars = args.chars
+    orderedChars = orderChars(chars)
 
     # set color scheme
     frameAutoColor = None
@@ -473,7 +499,7 @@ def main():
             start_colors,
             startCols,
             scale,
-            args.moreLevels,
+            orderedChars,
             args.invert,
             size=size,
         )
@@ -482,7 +508,7 @@ def main():
             mid_colors,
             (startCols + endCols) // 2,
             scale,
-            args.moreLevels,
+            orderedChars,
             args.invert,
             size=size,
         )
@@ -491,7 +517,7 @@ def main():
             end_colors,
             endCols,
             scale,
-            args.moreLevels,
+            orderedChars,
             args.invert,
             size=size,
         )
@@ -539,7 +565,7 @@ def main():
         startCols,
         endCols,
         scale,
-        args.moreLevels,
+        orderedChars,
         args.invert,
         size=size,
     )
@@ -555,4 +581,4 @@ def main():
 
 # call main
 if __name__ == "__main__":
-    test()
+    main()

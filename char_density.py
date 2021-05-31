@@ -1,25 +1,20 @@
-import sys, argparse, time
-import numpy as np
-import matplotlib.pyplot as plt
-import os, sys, subprocess
-import string
-
 from PIL import Image, ImageFont, ImageDraw
+import numpy as np
 
-ascii_chars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!\"#$%&'()*+,-./:;<=>?@[\]^_`{|}~ "
-ascii_letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-ascii_lowercase = "gdbqpmhwkaeyounjslfictzxrv"
-ascii_uppercase = "QBMDRWGNOHSUKEPCAZXVJFIYTL"
-ascii_upper_lower = "QBMDRWGNOHSUKEPCAZXVJFIYTLdbqpmhwkaeyounjslfictzxrv"
-gscale1 = "$@B%8&WM#*oahkbdpqwmZO0QLCJUYXzcvunxrjft/\|()1{}[]?-_+~<>i!lI;:,\"^`'. "
+ascii_chars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!\"#$%&'()*+,-./:;<=>?@[\]^_`{|}~"
+ascii_alphanumeric = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+ascii_alpha = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+ascii_lowercase = "abcdefghijklmnopqrstuvwxyz"
+ascii_uppercase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+ascii_numeric = "0123456789"
+ascii_tech = "0123456789!\"#$%&'()*+,-./:;<=>?@[\]^_`{|}~"
+ascii_symbols = "!\"#$%&'()*+,-./:;<=>?@[\]^_`{|}~"
+ascii_std_1 = "$@B%8&WM#*oahkbdpqwmZO0QLCJUYXzcvunxrjft/\|()1{}[]?-_+~<>i!lI;:,\"^`'."
+ascii_std_2 = "@%#*+=-:."
 
 
-# 10 levels of gray
-gscale2 = "@%#*+=-:. "
-
-
-def getCharDensity(char):
-    font_path = "fonts/SFMono-Semibold.otf"
+def getCharDensity(char, font_path=None):
+    font_path = font_path or "fonts/SFMono-Semibold.otf"
     font_size = 200
     try:
         font = ImageFont.truetype(font_path, size=font_size)
@@ -54,31 +49,16 @@ def getCharDensity(char):
     return density
 
 
-def orderChars(chars):
+def orderChars(chars, font_path=None):
     char_dict = []
     for c in chars:
-        density = getCharDensity(c)
+        density = getCharDensity(c, font_path)
         char_dict.append((c, density))
 
     char_dict.sort(key=lambda x: x[1], reverse=True)
 
     ordered_chars = [x[0] for x in char_dict]
     ordered_chars = "".join(ordered_chars)
+    ordered_chars += " "
 
-    print(ordered_chars)
-
-
-def main():
-    # orderChars(ascii_chars)
-
-    print(string.ascii_letters)
-    orderChars(string.ascii_uppercase)
-    # orderChars(gscale1)
-    # print(gscale1)
-    # orderChars(gscale2)
-    # print(gscale2)
-
-
-# call main
-if __name__ == "__main__":
-    main()
+    return ordered_chars

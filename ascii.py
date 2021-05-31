@@ -18,6 +18,7 @@ from skimage.transform import downscale_local_mean, resize, rescale
 
 from ansi import *
 from color_extraction import *
+from char_density import *
 
 # gray scale level values from:
 # http://paulbourke.net/dataformats/asciiart/
@@ -150,8 +151,8 @@ def covertImageToAscii(
     colors,
     cols,
     scale,
-    moreLevels,
-    invertImg,
+    chars,
+    invert,
     sampling=OPENCV_RESIZE,
     colorSelection=NEAREST,
 ):
@@ -198,7 +199,7 @@ def covertImageToAscii(
     tiles = normalizeTiles(tiles_greyscale)
 
     # apply inversion
-    if invertImg:
+    if invert:
         tiles = 1 - tiles
         colors = list(reversed(colors))
 
@@ -208,7 +209,7 @@ def covertImageToAscii(
     else:
         colors.sort(
             key=lambda rgb: (0.241 * rgb[0] + 0.691 * rgb[1] + 0.068 * rgb[2]),
-            reverse=invertImg,
+            reverse=invert,
         )
 
     # ascii image is a list of character strings
@@ -223,8 +224,8 @@ def covertImageToAscii(
 
         for i in range(cols):
             # get character representation of tile
-            gsval = gscale1[round((len(gscale1) - 1) * tiles[j][i])]
-            aimg[j].append(gsval)
+            char = chars[round((len(chars) - 1) * tiles[j][i])]
+            aimg[j].append(char)
 
             # get color for char of the tile
             if colorSelection == NEAREST:
@@ -307,11 +308,12 @@ def convertImageToAscii(
     colors=defaultPalatte(),
     cols=80,
     scale=0.5,
-    moreLevels=True,
-    invertImg=True,
+    chars=ascii_chars,
+    invert=True,
     filter=True,
     size=None,
     bg_color=None,
+    font=None,
 ):
     """
     Converts given image to an ASCII image
@@ -321,10 +323,10 @@ def convertImageToAscii(
     if filter:
         image = filterImage(image)
     # get text and ANSI colors of image
-    aimg, cimg = covertImageToAscii(image, colors, cols, scale, moreLevels, invertImg)
+    aimg, cimg = covertImageToAscii(image, colors, cols, scale, chars, invert)
 
     # convert to image
-    return text_image(aimg, cimg, invertImg, size, bg_color=bg_color)
+    return text_image(aimg, cimg, invert, size, bg_color=bg_color)
 
 
 # main() function
@@ -359,6 +361,7 @@ def main():
         required=False,
     )
     parser.add_argument("-i", "--invert", dest="invert", action="store_false")
+    parser.add_argument("-t", "--chars", dest="chars", default=ascii_chars)
     parser.add_argument(
         "-r", "--resolution", dest="resolution", type=int, default=1920, required=False
     )
@@ -393,16 +396,41 @@ def main():
     if args.imgOutFile:
         imgOutFile = Path(args.imgOutFile)
 
-    # set scale default as 0.5 which suits
-    # a Courier font
-    scale = 0.5
+    # set scale default as 0.6 which suits
+    # the standard SF font
+    scale = 0.6
     if args.scale:
         scale = float(args.scale)
 
     # set cols
-    cols = 80
+    cols = 120
     if args.cols:
         cols = int(args.cols)
+
+    # sort chars by char density
+    if args.chars == "printable":
+        chars = ascii_chars
+    elif args.chars == "alphanumeric":
+        chars = ascii_alphanumeric
+    elif args.chars == "alpha":
+        chars = ascii_alpha
+    elif args.chars == "lower":
+        chars = ascii_lowercase
+    elif args.chars == "upper":
+        chars = ascii_uppercase
+    elif args.chars == "tech":
+        chars = ascii_tech
+    elif args.chars == "numeric":
+        chars = ascii_numeric
+    elif args.chars == "symbols":
+        chars = ascii_symbols
+    elif args.chars == "std1":
+        chars = ascii_std_1
+    elif args.chars == "std2":
+        chars = ascii_std_2
+    else:
+        chars = args.chars
+    orderedChars = orderChars(chars)
 
     # set output size
     outputSize = autoSize(image, resolution=args.resolution)
@@ -421,7 +449,7 @@ def main():
 
     # convert image to ascii txt
     aimg, cimg = covertImageToAscii(
-        image, colors, cols, scale, True, args.invert  # TODO: morleveles
+        image, colors, cols, scale, orderedChars, args.invert
     )
 
     # make image from text
