@@ -14,7 +14,7 @@ ascii_std_2 = "@%#*+=-:."
 
 
 def getCharDensity(char, font_path=None):
-    font_path = font_path or "fonts/SFMono-Semibold.otf"
+    font_path = font_path or "fonts/SFMono-Medium.otf"
     font_size = 200
     try:
         font = ImageFont.truetype(font_path, size=font_size)

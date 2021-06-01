@@ -67,7 +67,6 @@ def animateAsciiImage(
                 scale,
                 chars,
                 invert,
-                filter=True,
                 size=size,
             )
 

@@ -202,7 +202,7 @@ def convertVideoToAscii(
 
             # convert image to ascii
             ascii_img = convertImageToAscii(
-                frame, colors, cols, scale, chars, invert, filter=False, size=size
+                frame, colors, cols, scale, chars, invert, size=size
             )
 
             # convert ascii frame from PIL to OpenCV and add to the video

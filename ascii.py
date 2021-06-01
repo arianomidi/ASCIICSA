@@ -1,13 +1,19 @@
-# Python code to convert an image to ASCII image.
-import sys, argparse, time
-import numpy as np
+"""
+A program that converts an image into ASCII art v2.0
 
+Author: Arian Omidi
+Email: arian.omidi@icloud.com
+GitHub: https://github.com/ArianOmidi
+"""
+
+import sys, argparse, time
 from pathlib import Path
-import matplotlib.pyplot as plt
 import os, sys, subprocess
 
-from PIL import Image, ImageFilter, ImageFont, ImageDraw, ImageEnhance
+
+import numpy as np
 import cv2
+from PIL import Image, ImageFont, ImageDraw, ImageEnhance
 from skimage.measure import block_reduce
 from skimage.transform import downscale_local_mean
 
@@ -29,30 +35,16 @@ CONTRAST = 0
 BRIGHTNESS = 1
 
 
-def normalizeTiles(tiles):
-    """
-    Given numpy array, filter and return normalized image array
-    """
-    """print(tiles.min(), tiles.max())"""
+# ======================  HELPER METHODS  ====================== #
 
-    # percentage filter
-    min_val = np.percentile(tiles, 0)
-    max_val = np.percentile(tiles, 100)
-    tiles = np.clip(tiles, min_val, max_val)
 
-    # standard
-    # min_val = 0
-    # max_val = 255
-
-    """print(tiles.min(), tiles.max())"""
-
-    # normalize tile value array
-    if max_val != min_val:
-        normalized_tiles = (tiles - min_val) / (max_val - min_val)
+def autoSize(image, resolution=1920):
+    """Determines the size of an image by setting the largest side to the size of the resolution"""
+    if image.width >= image.height:
+        size = (resolution, round((resolution / image.width) * image.height))
     else:
-        normalized_tiles = tiles - min_val
-
-    return normalized_tiles
+        size = (round((resolution / image.height) * image.width), resolution)
+    return size
 
 
 def filterImage(image, factor, type=CONTRAST):
@@ -89,6 +81,28 @@ def autoColor(image, colorCount, greyscale=False, show_chart=False):
         return getColorPalatte(image, colorCount, show_chart)
 
 
+def normalizeTiles(tiles):
+    """
+    Given numpy array, filter and return normalized image array
+    """
+
+    # percentage filter
+    min_val = np.min(tiles)
+    max_val = np.max(tiles)
+    tiles = np.clip(tiles, min_val, max_val)
+
+    # normalize tile value array
+    if max_val != min_val:
+        normalized_tiles = (tiles - min_val) / (max_val - min_val)
+    else:
+        normalized_tiles = tiles - min_val
+
+    return normalized_tiles
+
+
+# ======================  ASCII CONVERSION METHODS  ====================== #
+
+
 def covertImageToAscii(
     image,
     colors,
@@ -100,7 +114,16 @@ def covertImageToAscii(
     colorSelection=NEAREST,
 ):
     """
-    Given Image and dims (rows, cols) returns an m*n list of Images
+    Converts given image to array of characters and colors corresponding to the image.
+
+    arguments:
+    colors - the color pallate to be used as an RGB array
+    cols - the width of the output image in number of letters
+    scale - the ratio of rows to cols
+    chars - the characters used in the ASCII image
+    invert - if the backgroung should be black or white
+    sampling - sampling method used to detemine chars (default: RESIZE)
+    colorSelection - sampling method used to detemine colors (default: NEAREST)
     """
     # store dimensions
     W, H = image.size[0], image.size[1]
@@ -147,7 +170,7 @@ def covertImageToAscii(
         color_palette = np.asarray(colors)
     else:
         colors.sort(
-            key=lambda rgb: (0.241 * rgb[0] + 0.691 * rgb[1] + 0.068 * rgb[2]),
+            key=lambda rgb: (0.299 * rgb[0] + 0.587 * rgb[1] + 0.114 * rgb[2]),
             reverse=invert,
         )
 
@@ -180,18 +203,22 @@ def covertImageToAscii(
     return aimg, cimg
 
 
-# --------- TODO: refactor -------------- #
-def text_image(aimg, cimg, inverted, size, bg_color=None, font_path=None):
-    """Convert text file to a grayscale image with black characters on a white background.
+def textToImage(aimg, cimg, inverted, size, bg_color=None, font_path=None):
+    """
+    Convert character and color arrays to an ASCII image.
 
     arguments:
-    text_path - the content of this file will be converted to an image
+    aimg - the array of characters to be converted to an image
+    cimg - the array of colors coresponding to a char in aimg
+    inverted - if the backgroung should be black or white
+    size - size of the outputed image
+    bg_color - color of background (set to default based on the value of 'inverted')
     font_path - path to a font file (for example impact.ttf)
     """
 
-    # choose a font (you can see more detail in my library on github)
+    # choose a font
     if inverted:
-        default_font_path = "fonts/SFMono-Semibold.otf"
+        default_font_path = "fonts/SFMono-Medium.otf"
     else:
         default_font_path = "fonts/SFMono-Heavy.otf"
     font_path = font_path or default_font_path
@@ -200,7 +227,7 @@ def text_image(aimg, cimg, inverted, size, bg_color=None, font_path=None):
         font = ImageFont.truetype(font_path, size=font_size)
     except IOError:
         font = ImageFont.load_default()
-        print("Could not use chosen font. Using default.")
+        print("Warning: Could not use chosen font. Using default.")
 
     # char height is adjusted based on output size and col:row ratio
     line_width = font.getsize("".join(aimg[0]))[0]  # get line width
@@ -230,18 +257,6 @@ def text_image(aimg, cimg, inverted, size, bg_color=None, font_path=None):
     return image.resize(size)
 
 
-def autoSize(image, resolution=1920):
-    # set output size
-    if image.width >= image.height:
-        size = (resolution, round((resolution / image.width) * image.height))
-    else:
-        size = (round((resolution / image.height) * image.width), resolution)
-    return size
-
-
-# ---------------------------------------- #
-
-
 def convertImageToAscii(
     image,
     colors=defaultPalatte(),
@@ -249,27 +264,41 @@ def convertImageToAscii(
     scale=0.6,
     chars=ascii_chars,
     invert=True,
-    filter=True,
+    filterType=CONTRAST,
     filterFactor=1.3,
     size=None,
     bg_color=None,
     font=None,
 ):
     """
-    Converts given image to an ASCII image
+    Converts given image to an ASCII image (performs covertImageToAscii and then textToImage)
+
+    optional arguments:
+    colors - the color pallate to be used as an RGB array
+    cols - the width of the output image in number of letters
+    scale - the ratio of rows to cols
+    chars - the characters used in the ASCII image
+    invert - if the backgroung should be black or white
+    filterType - type of filter (CONTRAST or BRIGHTNESS)
+    filterFactor - the degree the filter will be applied (factor of 1 is equivelent to no filter)
+    size - size of the outputed image
+    bg_color - color of background (set to default based on the value of 'invert')
+    font - path to a font file (for example impact.ttf)
     """
+    image = filterImage(image, filterFactor, type=filterType)
     if not size:
         size = autoSize(image)
-    if filter:
-        image = filterImage(image, filterFactor)
+
     # get text and ANSI colors of image
     aimg, cimg = covertImageToAscii(image, colors, cols, scale, chars, invert)
 
     # convert to image
-    return text_image(aimg, cimg, invert, size, bg_color=bg_color, font_path=font)
+    return textToImage(aimg, cimg, invert, size, bg_color=bg_color, font_path=font)
 
 
-# main() function
+# ======================  MAIN PROGRAM  ====================== #
+
+
 def main():
     # create parser
     descStr = "This program converts an image into ASCII art."
@@ -289,38 +318,34 @@ def main():
     parser.add_argument(
         "-c", "--color", dest="colorScheme", type=int, nargs="?", const=16
     )
-    parser.add_argument("-a", "--autoColor", dest="autoColor", action="store_true")
-    parser.add_argument("-n", "--cols", dest="cols", type=int, default=120)
-    parser.add_argument("-l", "--scale", dest="scale", type=float, default=0.6)
-    parser.add_argument("-F", "--font-path", dest="fontPath", required=False)
-    parser.add_argument("-t", "--chars", dest="chars", default=ascii_chars)
-    parser.add_argument("-i", "--invert", dest="invert", action="store_false")
-    parser.add_argument("-r", "--resolution", dest="resolution", type=int, default=1920)
-    parser.add_argument(
-        "-f", "--constrast", dest="constrastFactor", type=float, default=1.3
-    )
+    parser.add_argument("-a", "--autoColor", action="store_true")
+    parser.add_argument("-n", "--cols", type=int, default=120)
+    parser.add_argument("-l", "--scale", type=float, default=0.6)
+    parser.add_argument("-F", "--fontPath", required=False)
+    parser.add_argument("-t", "--chars", default=ascii_chars)
+    parser.add_argument("-i", "--invert", action="store_false")
+    parser.add_argument("-r", "--resolution", type=int, default=1920)
+    parser.add_argument("-f", "--constrastFactor", type=float, default=1.3)
     parser.add_argument(
         "-T",
         "--sampling",
-        dest="samplingScheme",
         type=str.lower,
-        options=["resize", "median", "mean"],
+        choices=["resize", "median", "mean"],
         default="resize",
     )
     parser.add_argument(
         "-C",
-        "--color-selection",
-        dest="colorSelection",
+        "--colorSelection",
         type=str.lower,
-        options=["nearest", "fixed"],
+        choices=["nearest", "fixed"],
         default="nearest",
     )
 
     parser.add_argument("-o", "--out", dest="outFile", required=False)
     parser.add_argument("-O", "--imgout", dest="imgOutFile", required=False)
-    parser.add_argument("-H", "--hide", dest="hide", action="store_true")
-    parser.add_argument("-s", "--save", dest="save", action="store_true")
-    parser.add_argument("-p", "--print", dest="print", action="store_true")
+    parser.add_argument("-H", "--hide", action="store_true")
+    parser.add_argument("-s", "--save", action="store_true")
+    parser.add_argument("-p", "--print", action="store_true")
 
     # --------------  PARSING ARGUMENTS -------------- #
     args = parser.parse_args()
@@ -381,12 +406,12 @@ def main():
     outputSize = autoSize(image, resolution=args.resolution)
 
     # set sampling scheme
-    if args.samplingScheme == "median":
-        samplingScheme = BLOCK_REDUCE
-    elif args.samplingScheme == "mean":
-        samplingScheme = DOWNSCALE_MEAN_REDUCE
+    if args.sampling == "median":
+        sampling = BLOCK_REDUCE
+    elif args.sampling == "mean":
+        sampling = DOWNSCALE_MEAN_REDUCE
     else:
-        samplingScheme = OPENCV_RESIZE
+        sampling = OPENCV_RESIZE
 
     # set sampling scheme
     if args.colorSelection == "fixed":
@@ -402,7 +427,7 @@ def main():
     else:
         colors = defaultPalatte(args.greyscaleScheme, isColor=args.colorScheme)
 
-    # ------------------------------------------------- #
+    # --------------  GENERATE ASCII ART -------------- #
 
     print("Generating ASCII art...")
     start = time.perf_counter()
@@ -415,12 +440,12 @@ def main():
         args.scale,
         orderedChars,
         args.invert,
-        sampling=samplingScheme,
+        sampling=sampling,
         colorSelection=colorSelection,
     )
 
     # make image from text
-    image = text_image(aimg, cimg, args.invert, outputSize, font_path=fontPath)
+    image = textToImage(aimg, cimg, args.invert, outputSize, font_path=fontPath)
 
     # write to text file
     f = open(outFile, "w")

@@ -24,7 +24,9 @@ def GRAY2RGB(brightness):
 
 def getGreyscalePalatte(image, number_of_colors, show_chart=False):
     modified_image = np.array(image)
-    modified_image = cv2.resize(image, (600, 400), interpolation=cv2.INTER_AREA)
+    modified_image = cv2.resize(
+        modified_image, (600, 400), interpolation=cv2.INTER_AREA
+    )
     modified_image = modified_image.reshape(-1, 1)
 
     clf = KMeans(n_clusters=number_of_colors)
@@ -56,7 +58,9 @@ def getGreyscalePalatte(image, number_of_colors, show_chart=False):
 
 def getColorPalatte(image, number_of_colors, show_chart=False):
     modified_image = np.array(image)
-    modified_image = cv2.resize(image, (600, 400), interpolation=cv2.INTER_AREA)
+    modified_image = cv2.resize(
+        modified_image, (600, 400), interpolation=cv2.INTER_AREA
+    )
     modified_image = modified_image.reshape(-1, 3)
 
     clf = KMeans(n_clusters=number_of_colors)
