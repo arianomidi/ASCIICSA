@@ -4,6 +4,7 @@ A program that converts an image into ASCII art v2.0
 Author: Arian Omidi
 Email: arian.omidi@icloud.com
 GitHub: https://github.com/ArianOmidi
+Date: 2021-06-01
 """
 
 import sys, argparse, time

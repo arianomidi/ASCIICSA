@@ -1,6 +1,15 @@
+"""
+A program that orders characters based on their density.
+
+Author: Arian Omidi
+Email: arian.omidi@icloud.com
+GitHub: https://github.com/ArianOmidi
+Date: 2021-06-01
+"""
 from PIL import Image, ImageFont, ImageDraw
 import numpy as np
 
+# define standard character sets
 ascii_chars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!\"#$%&'()*+,-./:;<=>?@[\]^_`{|}~"
 ascii_alphanumeric = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 ascii_alpha = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -14,6 +23,13 @@ ascii_std_2 = "@%#*+=-:."
 
 
 def getCharDensity(char, font_path=None):
+    """
+    Return the character density of a given character.
+
+    arguments:
+    char - character to determine its density
+    font_path - path to the font to be used (default: SFMono-Medium)
+    """
     font_path = font_path or "fonts/SFMono-Medium.otf"
     font_size = 200
     try:
@@ -35,21 +51,22 @@ def getCharDensity(char, font_path=None):
     # convert image to np array
     im = np.array(image)
 
-    # Count white pixels
+    # Count white and black pixels
     white = np.count_nonzero(im == True)
-    # print(f"white: {white}")
-
-    # Count black pixels
     black = np.size(im) - white
-    # print(f"black: {black}")
 
-    # calc ratio
-    density = white / black
-    # print(f"ratio: {ratio}")
-    return density
+    # return the ratio of used pixels
+    return white / black
 
 
 def orderChars(chars, font_path=None):
+    """
+    Order the characters in a given string by their density.
+
+    arguments:
+    chars - string of characters to order
+    font_path - path to the font to be used (default: SFMono-Medium)
+    """
     char_dict = []
     for c in chars:
         density = getCharDensity(c, font_path)
