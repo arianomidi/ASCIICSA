@@ -23,6 +23,7 @@ def GRAY2RGB(brightness):
 
 
 def getGreyscalePalatte(image, number_of_colors, show_chart=False):
+    modified_image = np.array(image)
     modified_image = cv2.resize(image, (600, 400), interpolation=cv2.INTER_AREA)
     modified_image = modified_image.reshape(-1, 1)
 
@@ -54,6 +55,7 @@ def getGreyscalePalatte(image, number_of_colors, show_chart=False):
 
 
 def getColorPalatte(image, number_of_colors, show_chart=False):
+    modified_image = np.array(image)
     modified_image = cv2.resize(image, (600, 400), interpolation=cv2.INTER_AREA)
     modified_image = modified_image.reshape(-1, 3)
 
@@ -84,13 +86,3 @@ def getColorPalatte(image, number_of_colors, show_chart=False):
         plt.show()
 
     return rgb_colors
-
-
-def main():
-    image = cv2.imread("data/stary_night.jpg")
-    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-    getGreyscalePalatte(image, 8, show_chart=True)
-
-
-if __name__ == "__main__":
-    main()

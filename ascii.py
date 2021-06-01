@@ -24,6 +24,10 @@ DOWNSCALE_MEAN_REDUCE = 2
 NEAREST = 0
 FIXED = 1
 
+# image filter methods
+CONTRAST = 0
+BRIGHTNESS = 1
+
 
 def normalizeTiles(tiles):
     """
@@ -51,50 +55,15 @@ def normalizeTiles(tiles):
     return normalized_tiles
 
 
-def filterImage(image):
-    # image brightness enhancer
-    # enhancer = ImageEnhance.Brightness(image)
-    enhancer = ImageEnhance.Contrast(image)
+def filterImage(image, factor, type=CONTRAST):
+    # select image enhancer
+    if type == CONTRAST:
+        enhancer = ImageEnhance.Contrast(image)
+    else:
+        enhancer = ImageEnhance.Brightness(image)
 
-    factor = 1.3
-    filtered_image = enhancer.enhance(factor)
-
-    # # create the histogram
-    # img_arr = np.array(image)
-    # histogram, bin_edges = np.histogram(img_arr, bins=256, range=(0, 255))
-    # fil_img_arr = np.array(filtered_image)
-    # filtered_histogram, fil_bin_edges = np.histogram(
-    #     fil_img_arr, bins=256, range=(0, 255)
-    # )
-
-    # f = plt.figure()
-    # f.add_subplot(1, 2, 1)
-    # plt.title("Grayscale Histogram")
-    # plt.xlabel("grayscale value")
-    # plt.ylabel("pixels")
-    # plt.xlim([0, 255])  # <- named arguments do not work here
-    # plt.plot(bin_edges[0:-1], histogram)  # <- or here
-
-    # f.add_subplot(1, 2, 2)
-    # plt.title("Grayscale Histogram")
-    # plt.xlabel("grayscale value")
-    # plt.ylabel("pixels")
-    # plt.xlim([0, 255])  # <- named arguments do not work here
-    # plt.plot(fil_bin_edges[0:-1], filtered_histogram)  # <- or here
-
-    # plt.show()
-
-    # ------ TODO: remove ------
-    # f = plt.figure()
-    # f.add_subplot(1, 2, 1)
-    # plt.imshow(image)
-
-    # f.add_subplot(1, 2, 2)
-    # plt.imshow(filtered_image)
-    # plt.show(block=True)
-    # ------ TODO: remove ------
-
-    return filtered_image
+    # return filtered image
+    return enhancer.enhance(factor)
 
 
 def defaultPalatte(shadeCount=8, isColor=False):
@@ -113,16 +82,11 @@ def defaultPalatte(shadeCount=8, isColor=False):
 
 
 def autoColor(image, colorCount, greyscale=False, show_chart=False):
-    # TODO: refactor
     if greyscale:
         image = image.convert("L")
-
-    image_cv = np.array(image)
-
-    if greyscale:
-        return getGreyscalePalatte(image_cv, colorCount, show_chart)
+        return getGreyscalePalatte(image, colorCount, show_chart)
     else:
-        return getColorPalatte(image_cv, colorCount, show_chart)
+        return getColorPalatte(image, colorCount, show_chart)
 
 
 def covertImageToAscii(
@@ -281,11 +245,12 @@ def autoSize(image, resolution=1920):
 def convertImageToAscii(
     image,
     colors=defaultPalatte(),
-    cols=80,
-    scale=0.5,
+    cols=120,
+    scale=0.6,
     chars=ascii_chars,
     invert=True,
     filter=True,
+    filterFactor=1.3,
     size=None,
     bg_color=None,
     font=None,
@@ -296,12 +261,12 @@ def convertImageToAscii(
     if not size:
         size = autoSize(image)
     if filter:
-        image = filterImage(image)
+        image = filterImage(image, filterFactor)
     # get text and ANSI colors of image
     aimg, cimg = covertImageToAscii(image, colors, cols, scale, chars, invert)
 
     # convert to image
-    return text_image(aimg, cimg, invert, size, bg_color=bg_color)
+    return text_image(aimg, cimg, invert, size, bg_color=bg_color, font_path=font)
 
 
 # main() function
@@ -325,20 +290,30 @@ def main():
         "-c", "--color", dest="colorScheme", type=int, nargs="?", const=16
     )
     parser.add_argument("-a", "--autoColor", dest="autoColor", action="store_true")
-    parser.add_argument("-n", "--cols", dest="cols", type=int, required=False)
-    parser.add_argument("-l", "--scale", dest="scale", type=float, required=False)
-    parser.add_argument(
-        "-m",
-        "--mode",
-        dest="mode",
-        default="all",
-        choices=["servers", "storage", "all"],
-        required=False,
-    )
-    parser.add_argument("-i", "--invert", dest="invert", action="store_false")
+    parser.add_argument("-n", "--cols", dest="cols", type=int, default=120)
+    parser.add_argument("-l", "--scale", dest="scale", type=float, default=0.6)
+    parser.add_argument("-F", "--font-path", dest="fontPath", required=False)
     parser.add_argument("-t", "--chars", dest="chars", default=ascii_chars)
+    parser.add_argument("-i", "--invert", dest="invert", action="store_false")
+    parser.add_argument("-r", "--resolution", dest="resolution", type=int, default=1920)
     parser.add_argument(
-        "-r", "--resolution", dest="resolution", type=int, default=1920, required=False
+        "-f", "--constrast", dest="constrastFactor", type=float, default=1.3
+    )
+    parser.add_argument(
+        "-T",
+        "--sampling",
+        dest="samplingScheme",
+        type=str.lower,
+        options=["resize", "median", "mean"],
+        default="resize",
+    )
+    parser.add_argument(
+        "-C",
+        "--color-selection",
+        dest="colorSelection",
+        type=str.lower,
+        options=["nearest", "fixed"],
+        default="nearest",
     )
 
     parser.add_argument("-o", "--out", dest="outFile", required=False)
@@ -347,14 +322,14 @@ def main():
     parser.add_argument("-s", "--save", dest="save", action="store_true")
     parser.add_argument("-p", "--print", dest="print", action="store_true")
 
-    # parse args
+    # --------------  PARSING ARGUMENTS -------------- #
     args = parser.parse_args()
 
     # open image and convert to RGB
     filename = Path(args.filename)
     if filename.exists():
         image = Image.open(args.filename).convert("RGB")
-        image = filterImage(image)
+        image = filterImage(image, args.constrastFactor)
     else:
         print("ERROR: Image does not exist.")
         exit(0)
@@ -369,16 +344,13 @@ def main():
     if args.imgOutFile:
         imgOutFile = Path(args.imgOutFile)
 
-    # set scale default as 0.6 which suits
-    # the standard SF font
-    scale = 0.6
-    if args.scale:
-        scale = float(args.scale)
-
-    # set cols
-    cols = 120
-    if args.cols:
-        cols = int(args.cols)
+    # verify font path
+    fontPath = args.fontPath
+    if fontPath:
+        fontFile = Path(fontPath)
+        if not fontFile.exists():
+            print("ERROR: Font file does not exist.")
+            exit(0)
 
     # sort chars by char density
     if args.chars == "printable":
@@ -403,10 +375,24 @@ def main():
         chars = ascii_std_2
     else:
         chars = args.chars
-    orderedChars = orderChars(chars)
+    orderedChars = orderChars(chars, font_path=fontPath)
 
     # set output size
     outputSize = autoSize(image, resolution=args.resolution)
+
+    # set sampling scheme
+    if args.samplingScheme == "median":
+        samplingScheme = BLOCK_REDUCE
+    elif args.samplingScheme == "mean":
+        samplingScheme = DOWNSCALE_MEAN_REDUCE
+    else:
+        samplingScheme = OPENCV_RESIZE
+
+    # set sampling scheme
+    if args.colorSelection == "fixed":
+        colorSelection = FIXED
+    else:
+        colorSelection = NEAREST
 
     # set color scheme
     if args.autoColor:
@@ -423,11 +409,18 @@ def main():
 
     # convert image to ascii txt
     aimg, cimg = covertImageToAscii(
-        image, colors, cols, scale, orderedChars, args.invert
+        image,
+        colors,
+        args.cols,
+        args.scale,
+        orderedChars,
+        args.invert,
+        sampling=samplingScheme,
+        colorSelection=colorSelection,
     )
 
     # make image from text
-    image = text_image(aimg, cimg, args.invert, outputSize)
+    image = text_image(aimg, cimg, args.invert, outputSize, font_path=fontPath)
 
     # write to text file
     f = open(outFile, "w")
