@@ -1,17 +1,28 @@
-import cv2
-import time
+"""
+A program that converts a video into ASCII art v2.0
+
+Author: Arian Omidi
+Email: arian.omidi@icloud.com
+GitHub: https://github.com/ArianOmidi
+Date: 2021-06-01
+"""
 import os, sys, subprocess
 from pathlib import Path
 from shutil import rmtree
+
+import cv2
 from PIL import Image
 import numpy as np
-import matplotlib.pyplot as plt
-from tqdm import tqdm, trange
+
+from tqdm import tqdm
 import argparse
 
 from color import *
-from ascii import convertImageToAscii, autoColor, autoSize, defaultPalatte
+from ascii import convertImageToAscii, autoColor
 from char_density import *
+
+
+# ======================  HELPER METHODS  ====================== #
 
 
 def convertOpenCV2PIL(img_cv):
@@ -24,15 +35,19 @@ def convertPIL2OpenCV(img_pil):
     return cv2.cvtColor(img_arr, cv2.COLOR_RGB2BGR)
 
 
-def extractFrame(filename, out=None, dest=0.5):
-    """Extracts frame from video.
-    dest=0 -> start
-    dest=1 -> end"""
+def extractFrame(filename, out=None, loc=0.5):
+    """
+    Extracts a frame from video.
 
+    arguments:
+    filename - name of source video
+    out - save location of the frame
+    loc - location of frame: 0 is the first frame and 1 is the last (default: 0.5)
+    """
     cam = cv2.VideoCapture(filename)
 
     ret, frame = cam.read()
-    while cam.get(cv2.CAP_PROP_POS_AVI_RATIO) <= dest:
+    while cam.get(cv2.CAP_PROP_POS_AVI_RATIO) <= loc:
         ret = cam.grab()
         if ret:
             ret, frame = cam.retrieve()
@@ -48,7 +63,19 @@ def extractFrame(filename, out=None, dest=0.5):
     return frame
 
 
-def boomerang(filename, out=None, fps=24, progress=True):
+# ======================  VIDEO MANIPULATION  ====================== #
+
+
+def boomerang(filename, out=None, fps=24, progress_bar=True):
+    """
+    Converts video into a Boomerang.
+
+    arguments:
+    filename - name of source video
+    out - save location of the boomerang
+    fps - frames per sec (default: 24)
+    progress_bar - display a progress bar if True
+    """
     file = Path(str(filename))
     # Check if file given is valid
     if not file.exists():
@@ -59,7 +86,7 @@ def boomerang(filename, out=None, fps=24, progress=True):
     frames_path.mkdir(parents=True, exist_ok=True)
 
     # create the frames
-    vid_to_img(file, frames_path, progress_bar=progress)
+    vid_to_img(file, frames_path, progress_bar=progress_bar)
 
     # get frames
     frames = sorted(frames_path.glob("*"))
@@ -68,7 +95,7 @@ def boomerang(filename, out=None, fps=24, progress=True):
 
     # save frames to video
     out = out or Path("{}/{}_boomerang.mp4".format(file.parent, file.stem))
-    img_to_vid(out, fps, frames=frames, progress_bar=progress)
+    img_to_vid(out, fps, frames=frames, progress_bar=progress_bar)
 
     # delete frame dir
     try:
@@ -78,6 +105,16 @@ def boomerang(filename, out=None, fps=24, progress=True):
 
 
 def img_to_vid(out, fps, in_path=None, frames=None, progress_bar=False):
+    """
+    Converts frames into a video.
+
+    arguments:
+    out - save location of the video
+    fps - frames per sec
+    in_path - directory of frames (optional)
+    frames - list of frames (optional)
+    progress_bar - display a progress bar if True
+    """
     # Get all the frame paths
     if in_path:
         frames = sorted(in_path.glob("*"))
@@ -109,6 +146,14 @@ def img_to_vid(out, fps, in_path=None, frames=None, progress_bar=False):
 
 
 def vid_to_img(filename, out, progress_bar=False):
+    """
+    Converts a video into frames.
+
+    arguments:
+    filename - name of source video
+    out - save location of the frames
+    progress_bar - display a progress bar if True
+    """
     # init video capture and frame number
     cam = cv2.VideoCapture(str(filename))
     total_frames = round(cam.get(cv2.CAP_PROP_FRAME_COUNT))
@@ -147,6 +192,9 @@ def vid_to_img(filename, out, progress_bar=False):
     cv2.destroyAllWindows()
 
 
+# ======================  ASCII CONVERSION METHODS  ====================== #
+
+
 def convertVideoToAscii(
     filename,
     out,
@@ -161,6 +209,23 @@ def convertVideoToAscii(
     invert,
     size=None,
 ):
+    """
+    Converts given image to array of characters and colors corresponding to the image.
+
+    arguments:
+    filename - name of the input video
+    out - save location of the frames
+    fps - frames per sec
+    colors - the color pallate to be used as an RGB array
+    frameAutoColor - sample colors at colorSampleRate if True
+    colorSampleRate - the rate at which to auto sample colors
+    startCols - the width of the output image in number of letters on the first frame
+    endCols - the width of the output image in number of letters on the last frame
+    scale - the ratio of rows to cols
+    chars - the characters used in the ASCII image
+    invert - if the backgroung should be black or white
+    size - size of the outputed video
+    """
     # init video capture
     cam = cv2.VideoCapture(str(filename))
     total_frames = round(cam.get(cv2.CAP_PROP_FRAME_COUNT))
@@ -217,6 +282,9 @@ def convertVideoToAscii(
     cv2.destroyAllWindows()
 
 
+# ======================  MAIN PROGRAM  ====================== #
+
+
 def main():
     # create parser
     descStr = "This program converts a video into ASCII art."
@@ -236,26 +304,24 @@ def main():
     parser.add_argument(
         "-c", "--color", dest="colorScheme", type=int, nargs="?", const=16
     )
-    parser.add_argument("-a", "--autoColor", dest="autoColor", action="store_true")
+    parser.add_argument("-a", "--autoColor", action="store_true")
     parser.add_argument(
         "-R", "--colorSampleRate", dest="colorSampleRate", type=int, nargs="?", const=-1
     )
-    parser.add_argument(
-        "-n", "--cols", dest="cols", type=int, nargs="+", required=False
-    )
-    parser.add_argument("-l", "--scale", dest="scale", type=float, default=0.6)
-    parser.add_argument("-m", "--morelevels", dest="moreLevels", action="store_true")
-    parser.add_argument("-i", "--invert", dest="invert", action="store_false")
-    parser.add_argument("-f", "--fps", dest="fps", type=int, required=False)
-    parser.add_argument("-t", "--chars", dest="chars", default=ascii_chars)
-    parser.add_argument(
-        "-r", "--resolution", dest="resolution", type=int, default=1920, required=False
-    )
+    parser.add_argument("-n", "--cols", type=int, nargs="+", default=120)
+    parser.add_argument("-l", "--scale", type=float, default=0.6)
+    parser.add_argument("-t", "--chars", default=ascii_chars)
+    parser.add_argument("-i", "--invert", action="store_false")
+    parser.add_argument("-f", "--fps", type=int, required=False)
+    parser.add_argument("-r", "--resolution", type=int, default=1920)
+
+    parser.add_argument("-n", "--cols", type=int, default=120)
 
     parser.add_argument("-o", "--out", dest="outFile", required=False)
-    parser.add_argument("-H", "--hide", dest="hide", action="store_true")
-    parser.add_argument("-T", "--test", dest="test", action="store_true")
+    parser.add_argument("-H", "--hide", action="store_true")
+    parser.add_argument("-T", "--test", action="store_true")
 
+    # --------------  PARSING ARGUMENTS -------------- #
     # parse args
     args = parser.parse_args()
 
@@ -357,18 +423,16 @@ def main():
                 color = int(i * 255 / (args.greyscaleScheme - 1))
                 colors.append((color, color, color))
 
-    # test frame
+    # --------------  TEST FRAMES (OPTIONAL) -------------- #
     if args.test:
         # get frames
-        start_frame = convertOpenCV2PIL(extractFrame(str(filename), dest=0)).convert(
+        start_frame = convertOpenCV2PIL(extractFrame(str(filename), loc=0)).convert(
             "RGB"
         )
-        mid_frame = convertOpenCV2PIL(extractFrame(str(filename), dest=0.5)).convert(
+        mid_frame = convertOpenCV2PIL(extractFrame(str(filename), loc=0.5)).convert(
             "RGB"
         )
-        end_frame = convertOpenCV2PIL(extractFrame(str(filename), dest=1)).convert(
-            "RGB"
-        )
+        end_frame = convertOpenCV2PIL(extractFrame(str(filename), loc=1)).convert("RGB")
 
         # set color
         if frameAutoColor:
@@ -414,7 +478,6 @@ def main():
         if response.upper() != "Y":
             exit(0)
 
-    # -------------------------------------- #
     # Confirm if about to overwrite a file
     if outFile.is_file():
         response = input(
@@ -427,6 +490,7 @@ def main():
 
     outFile.parent.mkdir(parents=True, exist_ok=True)
 
+    # --------------  GENERATE ASCII ART -------------- #
     print("Generating ASCII art...")
 
     # Convert video to ascii

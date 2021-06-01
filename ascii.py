@@ -6,10 +6,9 @@ Email: arian.omidi@icloud.com
 GitHub: https://github.com/ArianOmidi
 Date: 2021-06-01
 """
-import sys, argparse, time
-from pathlib import Path
 import os, sys, subprocess
-
+from pathlib import Path
+import argparse, time
 
 import numpy as np
 import cv2
