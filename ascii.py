@@ -1,40 +1,19 @@
 # Python code to convert an image to ASCII image.
 import sys, argparse, time
 import numpy as np
-from scipy.ndimage.filters import gaussian_filter, percentile_filter
-from scipy import ndimage
-import math
-import colorsys
+
 from pathlib import Path
 import matplotlib.pyplot as plt
-from colorthief import ColorThief
 import os, sys, subprocess
 
-from PIL import Image, ImageFilter, ImageFont, ImageDraw, ImageOps, ImageEnhance
+from PIL import Image, ImageFilter, ImageFont, ImageDraw, ImageEnhance
 import cv2
 from skimage.measure import block_reduce
-from skimage.transform import downscale_local_mean, resize, rescale
-
+from skimage.transform import downscale_local_mean
 
 from ansi import *
 from color_extraction import *
 from char_density import *
-
-# gray scale level values from:
-# http://paulbourke.net/dataformats/asciiart/
-
-# 70 levels of gray
-# gscale1 = "$@B%8&WM#*oahkbdpqwmZO0QLCJUYXzcvunxrjft/\|()1{}[]?-_+~<>i!lI;:,\"^`'. "
-gscale1 = "QB0M8$WO&#dbqpUmC%@ZXhwkaoJI1unj{]}Ylf[*ictzxr?L|v)(\/+<>^!;\"~:-_,'.` "
-
-# 10 levels of gray
-# gscale1 = "@%#*+=-:. "
-# gscale1 = "#%@*=+:-. "
-# gscale1 = "QBMgDRWGNOHdSbqpUKEmPCAZXhwkVaeyoJFIunjsYlfTictzxrLv "
-# gscale1 = "QBMDRWGNOHSUKEPCAZXVJFIYTLdbqpmhwkaeyounjslfictzxrv "
-# gscale1 = "gdbqpmhwkaeyounjslfictzxrv "
-# gscale1 = "QBMDRWGNOHSUKEPCAZXVJFIYTL "
-# gscale2 = "ARIANomidi"
 
 # sampling methods
 OPENCV_RESIZE = 0
@@ -77,7 +56,7 @@ def filterImage(image):
     # enhancer = ImageEnhance.Brightness(image)
     enhancer = ImageEnhance.Contrast(image)
 
-    factor = 1.2
+    factor = 1.3
     filtered_image = enhancer.enhance(factor)
 
     # # create the histogram
@@ -167,10 +146,6 @@ def covertImageToAscii(
     w = int(W / cols)
     # compute tile height based on aspect ratio and scale
     h = int(W / (scale * cols))
-
-    # print(" - input image dims: %d x %d : %.2f" % (W, H, W / H))
-    # print(" - cols: %d, rows: %d : %.2f" % (cols, rows, cols / rows))
-    # print(" - tile dims: %d x %d" % (w, h))
 
     # check if image size is too small
     if cols > W or rows > H:
@@ -372,12 +347,10 @@ def main():
     parser.add_argument("-s", "--save", dest="save", action="store_true")
     parser.add_argument("-p", "--print", dest="print", action="store_true")
 
-    # parser.add_argument("-l", "--scale", dest="scale", type=float, required=False)
-
     # parse args
     args = parser.parse_args()
 
-    # open image and convert to grayscale
+    # open image and convert to RGB
     filename = Path(args.filename)
     if filename.exists():
         image = Image.open(args.filename).convert("RGB")
@@ -443,8 +416,9 @@ def main():
     else:
         colors = defaultPalatte(args.greyscaleScheme, isColor=args.colorScheme)
 
-    # -------------------------------------- #
-    print("generating ASCII art...")
+    # ------------------------------------------------- #
+
+    print("Generating ASCII art...")
     start = time.perf_counter()
 
     # convert image to ascii txt
@@ -454,12 +428,6 @@ def main():
 
     # make image from text
     image = text_image(aimg, cimg, args.invert, outputSize)
-    print(
-        " - out dims: %d x %d : %.2f"
-        % (image.size[0], image.size[1], image.size[0] / image.size[1])
-    )
-    end = time.perf_counter()
-    print(f"Text to Image {end - start:0.4f} seconds")
 
     # write to text file
     f = open(outFile, "w")

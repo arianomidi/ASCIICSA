@@ -10,12 +10,7 @@ from tqdm import tqdm, trange
 import argparse
 
 from ansi import *
-from ascii import (
-    convertImageToAscii,
-    autoColor,
-    autoSize,
-    defaultPalatte,
-)
+from ascii import convertImageToAscii, autoColor, autoSize, defaultPalatte
 from char_density import *
 
 
@@ -222,117 +217,6 @@ def convertVideoToAscii(
     cv2.destroyAllWindows()
 
 
-def movingAsciiImage(
-    image,
-    out,
-    fps,
-    total_frames,
-    colors,
-    cols,
-    scale,
-    chars,
-    invert,
-    size=None,
-):
-
-    # init output video
-    video = cv2.VideoWriter(str(out), cv2.VideoWriter_fourcc(*"mp4v"), fps, size)
-    image = image.resize(size)
-
-    # set increase
-    inc = 2
-    image = image.convert("L")
-    img_arr = np.array(image).astype(np.int32)
-    frame_arr = np.array(image).astype(np.int32)
-
-    max_val = 255
-    min_val = 0
-    mask = (min_val <= img_arr) & (img_arr <= max_val)
-    inc_mask = img_arr <= max_val
-
-    # bg_hue = 0 if invert else 255
-    # bg_inc = inc if invert else -inc
-
-    # init progress bar
-    frame_num = 0
-    with tqdm(
-        desc="Creating animated ASCII Image", total=total_frames, ncols=75, unit="f"
-    ) as pbar:
-        while frame_num < total_frames:
-            # update the progress bar
-            pbar.update(1)
-
-            # get next frame if available
-            np.putmask(frame_arr, mask & inc_mask, frame_arr + inc)
-            np.putmask(frame_arr, mask & ~inc_mask, frame_arr - inc)
-            # frame_arr = np.where(mask & inc_mask, frame_arr + inc, frame_arr - inc)
-            # frame_arr = np.where(mask & dec_mask, frame_arr - inc, frame_arr)
-            inc_mask = np.logical_or(frame_arr <= min_val, inc_mask)
-            inc_mask = np.logical_and(frame_arr < max_val, inc_mask)
-            # dec_mask = np.logical_or(frame_arr >= max_val, dec_mask)
-            # dec_mask = np.logical_and(frame_arr > min_val, dec_mask)
-
-            frame_arr = np.clip(frame_arr, 0, 255)
-
-            # convert OpenCV image to PIL and to greyscale
-            frame = Image.fromarray(frame_arr).convert(
-                "RGB"
-            )  # TODO: change if too slow
-
-            # # background color
-            # bg_hue += bg_inc
-            # if bg_hue <= 0:
-            #     bg_inc = -bg_inc
-            #     bg_hue = 0
-            # elif bg_hue >= 255:
-            #     bg_inc = -bg_inc
-            #     bg_hue = 255
-
-            # bg_color = (bg_hue, bg_hue, bg_hue)
-
-            # convert image to ascii
-            ascii_img = convertImageToAscii(
-                frame,
-                colors,
-                cols,
-                scale,
-                chars,
-                invert,
-                filter=True,
-                size=size,
-            )
-
-            # convert ascii frame from PIL to OpenCV and add to the video
-            ascii_img_cv = convertPIL2OpenCV(ascii_img)
-            video.write(ascii_img_cv)
-
-            frame_num += 1
-
-    # Release all space and windows once done
-    video.release()
-    cv2.destroyAllWindows()
-
-
-def test():
-    filename = Path("data/billevans.jpg")
-    out = Path("out/moving_image/bill_test_ascii_nearest.mp4")
-    image = Image.open(str(filename)).convert("RGB")
-    fps = 16
-
-    movingAsciiImage(
-        image,
-        out,
-        fps,
-        256,
-        defaultPalatte(),
-        120,
-        0.6,
-        True,
-        True,
-        size=autoSize(image),
-    )
-
-
 def main():
     # create parser
     descStr = "This program converts a video into ASCII art."
@@ -383,7 +267,7 @@ def main():
         exit(0)
 
     # set text output file
-    outFile = Path("out/{}_ascii.mp4".format(filename.stem))
+    outFile = Path("out/video/{}_ascii.mp4".format(filename.stem))
     if args.outFile:
         outFile = Path(args.outFile)
 
@@ -526,15 +410,6 @@ def main():
         mid_ascii.show()
         end_ascii.show()
 
-        # plt.figure(figsize=(6, 10))
-        # plt.subplot(3, 1, 1)
-        # plt.imshow(start_ascii)
-        # plt.subplot(3, 1, 2)
-        # plt.imshow(start_ascii)
-        # plt.subplot(3, 1, 3)
-        # plt.imshow(end_ascii)
-        # plt.show()
-
         response = input("Continue? (y/n) ".format(outFile))
         if response.upper() != "Y":
             exit(0)
@@ -552,7 +427,7 @@ def main():
 
     outFile.parent.mkdir(parents=True, exist_ok=True)
 
-    print("generating ASCII art...")
+    print("Generating ASCII art...")
 
     # Convert video to ascii
     convertVideoToAscii(
