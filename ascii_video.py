@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm, trange
 import argparse
 
-from ansi import *
+from color import *
 from ascii import convertImageToAscii, autoColor, autoSize, defaultPalatte
 from char_density import *
 

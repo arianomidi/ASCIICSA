@@ -6,7 +6,6 @@ Email: arian.omidi@icloud.com
 GitHub: https://github.com/ArianOmidi
 Date: 2021-06-01
 """
-
 import sys, argparse, time
 from pathlib import Path
 import os, sys, subprocess
@@ -18,8 +17,7 @@ from PIL import Image, ImageFont, ImageDraw, ImageEnhance
 from skimage.measure import block_reduce
 from skimage.transform import downscale_local_mean
 
-from ansi import *
-from color_extraction import *
+from color import *
 from char_density import *
 
 # sampling methods
@@ -454,7 +452,7 @@ def main():
     for line, line_colors in zip(aimg, cimg):
         f.write(background_color)
         for c, color in zip(line, line_colors):
-            ansi_color = rgbToAnsi256(*color)
+            ansi_color = RGB2ANSI256(*color)
             f.write(ansi_color + c)
         f.write("\033[0m\n")
     f.close()

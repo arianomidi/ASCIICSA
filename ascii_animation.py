@@ -7,7 +7,7 @@ import numpy as np
 from tqdm import tqdm
 import argparse
 
-from ansi import *
+from color import *
 from ascii import convertImageToAscii, autoColor, autoSize, defaultPalatte
 from ascii_video import *
 from char_density import *
