@@ -17,8 +17,8 @@ import numpy as np
 from tqdm import tqdm
 import argparse
 
-from color import *
 from ascii import convertImageToAscii, autoColor
+from color import *
 from char_density import *
 
 
@@ -210,7 +210,7 @@ def convertVideoToAscii(
     size=None,
 ):
     """
-    Converts given image to array of characters and colors corresponding to the image.
+    Converts given video into ASCII art.
 
     arguments:
     filename - name of the input video
@@ -231,10 +231,9 @@ def convertVideoToAscii(
     total_frames = round(cam.get(cv2.CAP_PROP_FRAME_COUNT))
 
     # init output video
-    # TODO: remove for getDefaultSize()
     if not size:
         success, frame = cam.read()
-        frame_pil = convertOpenCV2PIL(frame).convert("RGB")  # TODO: change if too slow
+        frame_pil = convertOpenCV2PIL(frame).convert("RGB")
         ascii_img = convertImageToAscii(
             frame_pil, colors, startCols, scale, chars, invert, size=size
         )
@@ -255,7 +254,7 @@ def convertVideoToAscii(
             pbar.update(1)
 
             # convert OpenCV image to PIL and to greyscale
-            frame = convertOpenCV2PIL(frame).convert("RGB")  # TODO: change if too slow
+            frame = convertOpenCV2PIL(frame).convert("RGB")
 
             # auto color every n frames
             if frameAutoColor and frame_num % colorSampleRate == 0:
@@ -305,9 +304,7 @@ def main():
         "-c", "--color", dest="colorScheme", type=int, nargs="?", const=16
     )
     parser.add_argument("-a", "--autoColor", action="store_true")
-    parser.add_argument(
-        "-R", "--colorSampleRate", dest="colorSampleRate", type=int, nargs="?", const=-1
-    )
+    parser.add_argument("-R", "--colorSampleRate", type=int, nargs="?", const=-1)
     parser.add_argument("-n", "--cols", type=int, nargs="+", default=120)
     parser.add_argument("-l", "--scale", type=float, default=0.6)
     parser.add_argument("-t", "--chars", default=ascii_chars)
@@ -315,9 +312,7 @@ def main():
     parser.add_argument("-f", "--fps", type=int, required=False)
     parser.add_argument("-r", "--resolution", type=int, default=1920)
 
-    parser.add_argument("-n", "--cols", type=int, default=120)
-
-    parser.add_argument("-o", "--out", dest="outFile", required=False)
+    parser.add_argument("-O", "--out", dest="outFile", required=False)
     parser.add_argument("-H", "--hide", action="store_true")
     parser.add_argument("-T", "--test", action="store_true")
 
@@ -342,8 +337,8 @@ def main():
     scale = args.scale
 
     # set cols
-    startCols = 80
-    endCols = 80
+    startCols = 120
+    endCols = 120
     if args.cols:
         startCols = int(args.cols[0])
         if len(args.cols) > 1:

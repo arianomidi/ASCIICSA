@@ -1,16 +1,29 @@
-import cv2
-import time
+"""
+A program that converts an image into animated ASCII art v2.0
+
+Author: Arian Omidi
+Email: arian.omidi@icloud.com
+GitHub: https://github.com/ArianOmidi
+Date: 2021-06-01
+"""
 import os, sys, subprocess
 from pathlib import Path
+from shutil import rmtree
+
+import cv2
 from PIL import Image
 import numpy as np
+
 from tqdm import tqdm
 import argparse
 
-from color import *
 from ascii import convertImageToAscii, autoColor, autoSize, defaultPalatte
 from ascii_video import *
+from color import *
 from char_density import *
+
+
+# ======================  ASCII CONVERSION METHODS  ====================== #
 
 
 def animateAsciiImage(
@@ -25,6 +38,21 @@ def animateAsciiImage(
     invert,
     size=None,
 ):
+    """
+    Converts given image to animated ASCII Art.
+
+    arguments:
+    image - PIL image
+    out - save location of the ASCII animation
+    fps - frames per sec
+    gs_inc - grayscale increment
+    colors - the color pallate to be used as an RGB array
+    cols - the width of the output image in number of letters
+    scale - the ratio of rows to cols
+    chars - the characters used in the ASCII image
+    invert - if the backgroung should be black or white
+    size - size of the outputed video
+    """
 
     # init output video
     video = cv2.VideoWriter(str(out), cv2.VideoWriter_fourcc(*"mp4v"), fps, size)
@@ -81,6 +109,9 @@ def animateAsciiImage(
     cv2.destroyAllWindows()
 
 
+# ======================  MAIN PROGRAM  ====================== #
+
+
 def main():
     # create parser
     descStr = "This program converts an image into moving ASCII art."
@@ -88,32 +119,19 @@ def main():
     # add expected arguments
     parser.add_argument("filename")
 
-    parser.add_argument(
-        "-g",
-        "--greyscale",
-        dest="greyscaleScheme",
-        nargs="?",
-        type=int,
-        const=8,
-        default=8,
-    )
-    parser.add_argument(
-        "-c", "--color", dest="colorScheme", type=int, nargs="?", const=16
-    )
-    parser.add_argument("-a", "--autoColor", dest="autoColor", action="store_true")
-    parser.add_argument("-n", "--cols", dest="cols", type=int, default=120)
-    parser.add_argument("-l", "--scale", dest="scale", type=float, default=0.6)
-    parser.add_argument("-t", "--chars", dest="chars", default=ascii_chars)
-    parser.add_argument("-i", "--invert", dest="invert", action="store_false")
-    parser.add_argument("-f", "--fps", dest="fps", type=int, default=16)
-    parser.add_argument("-d", "--inc", dest="inc", type=int, default=2)
-    parser.add_argument(
-        "-r", "--resolution", dest="resolution", type=int, default=1920, required=False
-    )
+    parser.add_argument("-g", "--greyscale", type=int, default=8)
+    parser.add_argument("-n", "--cols", type=int, default=120)
+    parser.add_argument("-l", "--scale", type=float, default=0.6)
+    parser.add_argument("-t", "--chars", default=ascii_chars)
+    parser.add_argument("-i", "--invert", action="store_false")
+    parser.add_argument("-f", "--fps", type=int, default=16)
+    parser.add_argument("-d", "--inc", type=int, default=2)
+    parser.add_argument("-r", "--resolution", type=int, default=1920)
 
-    parser.add_argument("-o", "--out", dest="outFile", required=False)
-    parser.add_argument("-H", "--hide", dest="hide", action="store_true")
+    parser.add_argument("-O", "--out", dest="outFile", required=False)
+    parser.add_argument("-H", "--hide", action="store_true")
 
+    # --------------  PARSING ARGUMENTS  -------------- #
     # parse args
     args = parser.parse_args()
 
@@ -128,6 +146,7 @@ def main():
     # set text output file
     outFile = Path("out/animated/{}_animated_ascii.mp4".format(filename.stem))
     if args.outFile:
+        print("boo")
         outFile = Path(args.outFile)
 
     # set output size
@@ -159,14 +178,9 @@ def main():
     orderedChars = orderChars(chars)
 
     # set color scheme
-    if args.autoColor:
-        num_of_colors = args.colorScheme or args.greyscaleScheme
-        is_greyscale = args.colorScheme == None
-        colors = autoColor(image, num_of_colors, greyscale=is_greyscale)
-    else:
-        colors = defaultPalatte(args.greyscaleScheme, isColor=args.colorScheme)
+    colors = defaultPalatte(args.greyscale)
 
-    # -------------------------------------- #
+    # --------------  GENERATE ASCII ART -------------- #
     # Confirm if about to overwrite a file
     if outFile.is_file():
         response = input(

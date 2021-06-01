@@ -126,7 +126,7 @@ def covertImageToAscii(
     # store dimensions
     W, H = image.size[0], image.size[1]
     # compute number of rows
-    rows = int(H * scale * cols / W)  # TODO
+    rows = int(H * scale * cols / W) 
     # compute width of tile
     w = int(W / cols)
     # compute tile height based on aspect ratio and scale
