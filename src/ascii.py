@@ -126,7 +126,7 @@ def covertImageToAscii(
     # store dimensions
     W, H = image.size[0], image.size[1]
     # compute number of rows
-    rows = int(H * scale * cols / W) 
+    rows = int(H * scale * cols / W)
     # compute width of tile
     w = int(W / cols)
     # compute tile height based on aspect ratio and scale
@@ -216,9 +216,9 @@ def textToImage(aimg, cimg, inverted, size, bg_color=None, font_path=None):
 
     # choose a font
     if inverted:
-        default_font_path = "fonts/SFMono-Medium.otf"
+        default_font_path = "../fonts/SFMono-Medium.otf"
     else:
-        default_font_path = "fonts/SFMono-Heavy.otf"
+        default_font_path = "../fonts/SFMono-Heavy.otf"
     font_path = font_path or default_font_path
     font_size = round((3 / 4) * (2 * size[1] / len(aimg)))
     try:
@@ -363,7 +363,7 @@ def main():
         outFile = args.outFile
 
     # set img output file
-    imgOutFile = Path("out/{}_ascii.png".format(filename.stem))
+    imgOutFile = Path("../out/{}_ascii.png".format(filename.stem))
     if args.imgOutFile:
         imgOutFile = Path(args.imgOutFile)
 

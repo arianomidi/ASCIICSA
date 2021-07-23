@@ -328,7 +328,7 @@ def main():
         exit(0)
 
     # set text output file
-    outFile = Path("out/video/{}_ascii.mp4".format(filename.stem))
+    outFile = Path("../out/video/{}_ascii.mp4".format(filename.stem))
     if args.outFile:
         outFile = Path(args.outFile)
 

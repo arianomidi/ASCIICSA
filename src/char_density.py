@@ -30,7 +30,7 @@ def getCharDensity(char, font_path=None):
     char - character to determine its density
     font_path - path to the font to be used (default: SFMono-Medium)
     """
-    font_path = font_path or "fonts/SFMono-Medium.otf"
+    font_path = font_path or "../fonts/SFMono-Medium.otf"
     font_size = 200
     try:
         font = ImageFont.truetype(font_path, size=font_size)

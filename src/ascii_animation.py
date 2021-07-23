@@ -144,7 +144,7 @@ def main():
         exit(0)
 
     # set text output file
-    outFile = Path("out/animated/{}_animated_ascii.mp4".format(filename.stem))
+    outFile = Path("../out/animated/{}_animated_ascii.mp4".format(filename.stem))
     if args.outFile:
         print("boo")
         outFile = Path(args.outFile)
