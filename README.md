@@ -8,9 +8,6 @@ Try it out and create custom ASCII images and even videos!
 
 <!-- [![ASCIICSA][product-screenshot]](https://example.com) -->
 ![flowers](https://user-images.githubusercontent.com/59782445/148183182-4881b9ec-5d11-4dda-bcff-e37b10c73e04.gif)
-<img src="resources/images/zebra_converted.png"/>
-
-
 
 ### Customization Features:
 * Color Selection
@@ -20,9 +17,8 @@ Try it out and create custom ASCII images and even videos!
 * Text
   * Select the font used by uploading font bitmap
   * Choose characters used 
-* Filter
+* Filters
   * Add filters to get desired output
-  * 
 
 <!-- GETTING STARTED -->
 ## Getting Started
@@ -48,16 +44,19 @@ To get a local copy up and running follow these simple example steps.
 ```sh
   python ascii.py /path/to/image
 ```
+<img src="resources/images/zebra_converted.png"/>
   
 ### Convert an image to animated ASCII image
 ```sh
   python ascii_animation.py /path/to/image
 ```
+<img width=500 src="resources/videos/girl.gif"/>
 
 ### Convert an image to ASCII video
 ```sh
   python ascii_video.py /path/to/video
 ```
+![flowers3](https://user-images.githubusercontent.com/59782445/148185944-9aa4ec1a-07e0-435f-b0c8-190f9028f5dc.gif)
 
 ### Customization Parameters
 ```
@@ -97,29 +96,16 @@ Optional Arguments:
 ## Examples
 
 ```sh
-python3 ascii.py -c stary_night.jpg     # color
+python3 ascii.py -n 160 woman.jpg    # more characters
 ```
-<img src="resources/images/stary_night_ansi16.png"/>
+<img src="resources/images/sof.png"/>
 
 ```sh
 python3 ascii.py -ac stary_night.jpg    # auto color
 ```
 <img src="resources/images/stary_night.png"/>
 
-```sh
-python3 ascii.py -n 160 woman.jpg    # more characters
-```
-<!-- ![flowers](https://user-images.githubusercontent.com/59782445/148182712-2ec44a01-c740-4b43-bfee-acb6be1c216d.gif) -->
-
-
-
-<img src="resources/images/sof.png"/>
-
-```sh
-python3 ascii.py -i -n 200 eyes.jpg    # more characters
-```
-<img src="resources/images/eyes2.png"/>
-
+***For more examples see the `./resources/` folder.***
 
 <!-- LICENSE -->
 ## License
@@ -130,18 +116,4 @@ Distributed under the MIT License. See `LICENSE` for more information.
 <!-- CONTACT -->
 ## Contact
 
-Arian Omidi - arian.omidi.6@gmail.com
-
-Project Link: [https://github.com/ArianOmidi/ASCIICSA](https://github.com/ArianOmidi/ASCIICSA)
-
-
-<!-- ACKNOWLEDGEMENTS -->
-## Acknowledgements
-* [GitHub Emoji Cheat Sheet](https://www.webpagefx.com/tools/emoji-cheat-sheet)
-
-
-
-<!-- MARKDOWN LINKS & IMAGES -->
-<!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
-[product-screenshot]: resources/images/zebra_converted.png
-[klimt]: resources/images/klimt_ansi16.png
+Arian Omidi - arian.omidi@icloud.com
