@@ -1,40 +1,16 @@
 # ASCIICSA
 
-<!-- TABLE OF CONTENTS -->
-<details open="open">
-  <summary>Table of Contents</summary>
-  <ol>
-    <li>
-      <a href="#about-the-project">About The Project</a>
-      <ul>
-        <li><a href="#built-with">Built With</a></li>
-      </ul>
-    </li>
-    <li>
-      <a href="#getting-started">Getting Started</a>
-      <ul>
-        <li><a href="#prerequisites">Prerequisites</a></li>
-        <li><a href="#installation">Installation</a></li>
-      </ul>
-    </li>
-    <li><a href="#usage">Usage</a></li>
-    <li><a href="#roadmap">Roadmap</a></li>
-    <li><a href="#contributing">Contributing</a></li>
-    <li><a href="#license">License</a></li>
-    <li><a href="#contact">Contact</a></li>
-    <li><a href="#acknowledgements">Acknowledgements</a></li>
-  </ol>
-</details>
-
-
-
 <!-- ABOUT THE PROJECT -->
 ## About
 
 There are many image to ASCII converters avaliable but these projects were limited and lacked the customization capabilities needed to create artistics images. 
 Try it out and create custom ASCII images and even videos! 
 
-[![ASCIICSA][product-screenshot]](https://example.com)
+<!-- [![ASCIICSA][product-screenshot]](https://example.com) -->
+![flowers](https://user-images.githubusercontent.com/59782445/148183182-4881b9ec-5d11-4dda-bcff-e37b10c73e04.gif)
+<img src="resources/images/zebra_converted.png"/>
+
+
 
 ### Customization Features:
 * Color Selection
@@ -120,10 +96,30 @@ Optional Arguments:
 
 ## Examples
 
-```
-python3 ascii.py -c stary_night.jpg
+```sh
+python3 ascii.py -c stary_night.jpg     # color
 ```
 <img src="resources/images/stary_night_ansi16.png"/>
+
+```sh
+python3 ascii.py -ac stary_night.jpg    # auto color
+```
+<img src="resources/images/stary_night.png"/>
+
+```sh
+python3 ascii.py -n 160 woman.jpg    # more characters
+```
+<!-- ![flowers](https://user-images.githubusercontent.com/59782445/148182712-2ec44a01-c740-4b43-bfee-acb6be1c216d.gif) -->
+
+
+
+<img src="resources/images/sof.png"/>
+
+```sh
+python3 ascii.py -i -n 200 eyes.jpg    # more characters
+```
+<img src="resources/images/eyes2.png"/>
+
 
 <!-- LICENSE -->
 ## License
