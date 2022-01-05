@@ -62,7 +62,7 @@ To get a local copy up and running follow these simple example steps.
    ```
 2. Install project dependencies
    ```sh
-   pip install -r requirements.txt -t /path/to/lib/directory
+   pip install -r requirements.txt
    ```
 
 <!-- USAGE EXAMPLES -->
@@ -83,6 +83,47 @@ To get a local copy up and running follow these simple example steps.
   python ascii_video.py /path/to/video
 ```
 
+### Customization Parameters
+```
+Optional Arguments:
+
+  -g [GREYSCALESCHEME], --greyscale [GREYSCALESCHEME]
+                        Select for greyscale image and pass number of shades used (defaults to true and 8 shades).
+  -c [COLORSCHEME], --color [COLORSCHEME]
+                        Select for colored image, use with --autoColor for best results (defaults to ANSI16 colors).
+  -a, --autoColor       Sample color pallet from most prominent colors in the picture (defalut: 8 samples for grescale and 16 samples for color).
+  -n COLS, --cols COLS  The number of characters on the width of the output image (default: 120).
+  -l SCALE, --scale SCALE
+                        The width-to-height ratio of the pixels sampled for each character (default: 0.6).
+  -F FONTPATH, --fontPath FONTPATH
+                        The path to the font to be used (default: SFMono-Medium).
+  -t CHARS, --chars CHARS
+                        The ASCII characters to be used or select from presets: [printable, alphanumeric, alpha, numeric, lower, upper, tech, symbols]
+                        (default: printable)
+  -i, --invert          Invert the output of the image (default: light characters on black background).
+  -r RESOLUTION, --resolution RESOLUTION
+                        The resolution of the output image (default: 1920)
+  -f CONSTRASTFACTOR, --constrastFactor CONSTRASTFACTOR
+                        Contrast factor: <1 less contrast, 1 no change, >1 more contrast (default: 1.3).
+  -T {resize,median,mean}, --sampling {resize,median,mean}
+                        The sampling method used: [resize, median, mean] (default: resize).
+  -C {nearest,fixed}, --colorSelection {nearest,fixed}
+                        The color selection method used: [nearest, fixed] (default: nearest).
+  -o OUTFILE, --out OUTFILE
+                        Output text location.
+  -O IMGOUTFILE, --imgout IMGOUTFILE
+                        Output image location.
+  -H, --hide            Do not open image after conversion (default: false).
+  -s, --save            Save ASCII image (default: false).
+  -p, --print           Print ASCII text to output (default: false).
+```
+
+## Examples
+
+```
+python3 ascii.py -c klimt_woman.jpg
+```
+[![ASCIICSA][klimt]]
 
 <!-- LICENSE -->
 ## License
@@ -106,16 +147,5 @@ Project Link: [https://github.com/ArianOmidi/ASCIICSA](https://github.com/ArianO
 
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
-[contributors-shield]: https://img.shields.io/github/contributors/othneildrew/Best-README-Template.svg?style=for-the-badge
-[contributors-url]: https://github.com/othneildrew/Best-README-Template/graphs/contributors
-[forks-shield]: https://img.shields.io/github/forks/othneildrew/Best-README-Template.svg?style=for-the-badge
-[forks-url]: https://github.com/othneildrew/Best-README-Template/network/members
-[stars-shield]: https://img.shields.io/github/stars/othneildrew/Best-README-Template.svg?style=for-the-badge
-[stars-url]: https://github.com/othneildrew/Best-README-Template/stargazers
-[issues-shield]: https://img.shields.io/github/issues/othneildrew/Best-README-Template.svg?style=for-the-badge
-[issues-url]: https://github.com/othneildrew/Best-README-Template/issues
-[license-shield]: https://img.shields.io/github/license/othneildrew/Best-README-Template.svg?style=for-the-badge
-[license-url]: https://github.com/othneildrew/Best-README-Template/blob/master/LICENSE.txt
-[linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
-[linkedin-url]: https://linkedin.com/in/othneildrew
 [product-screenshot]: resources/images/zebra_converted.png
+[klimt]: resources/images/klimt_ansii16.png
