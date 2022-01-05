@@ -1,10 +1,10 @@
-# ASCIICSA
+# ASCIICSA: ACSII Computer Synthesized Art
 
 <!-- ABOUT THE PROJECT -->
 ## About
 
 There are many image to ASCII converters avaliable but these projects were limited and lacked the customization capabilities needed to create artistics images. 
-ASCIICSA – ACSII Computer Simulated Art – can generate highly customizable ASCII art from an input image or video. Take a look at some of the results and even try it out to create your own ASCII art! 
+**ASCIICSA** - ***ACSII Computer Synthesized Art*** - can generate highly customizable ASCII art from an input image or video. Take a look at some of the results and even try it out to create your own ASCII art! 
 
 <!-- [![ASCIICSA][product-screenshot]](https://example.com) -->
 ![flowers](https://user-images.githubusercontent.com/59782445/148183182-4881b9ec-5d11-4dda-bcff-e37b10c73e04.gif)
