@@ -4,7 +4,7 @@
 ## About
 
 There are many image to ASCII converters avaliable but these projects were limited and lacked the customization capabilities needed to create artistics images. 
-Try it out and create custom ASCII images and even videos! 
+ASCIICSA – ACSII Computer Simulated Art – can generate highly customizable ASCII art from an input image or video. Take a look at some of the results and even try it out to create your own ASCII art! 
 
 <!-- [![ASCIICSA][product-screenshot]](https://example.com) -->
 ![flowers](https://user-images.githubusercontent.com/59782445/148183182-4881b9ec-5d11-4dda-bcff-e37b10c73e04.gif)
@@ -117,3 +117,5 @@ Distributed under the MIT License. See `LICENSE` for more information.
 ## Contact
 
 Arian Omidi - arian.omidi@icloud.com
+
+***Any ideas or improvements are much appreciated.***
