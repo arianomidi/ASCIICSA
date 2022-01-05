@@ -22,26 +22,18 @@ ascii_std_1 = "$@B%8&WM#*oahkbdpqwmZO0QLCJUYXzcvunxrjft/\|()1{}[]?-_+~<>i!lI;:,\
 ascii_std_2 = "@%#*+=-:."
 
 
-def getCharDensity(char, font_path=None):
+def getCharDensity(char, font, font_size):
     """
     Return the character density of a given character.
 
     arguments:
     char - character to determine its density
-    font_path - path to the font to be used (default: SFMono-Medium)
+    font - the font to be used (default: SFMono-Medium)
     """
-    font_path = font_path or "../fonts/SFMono-Medium.otf"
-    font_size = 200
-    try:
-        font = ImageFont.truetype(font_path, size=font_size)
-    except IOError:
-        font = ImageFont.load_default()
-        print("Could not use chosen font. Using default.")
 
     # init image
     char_w = font.getsize(char)[0]
-    char_h = round(4 / 3 * font_size)
-    # print((char_w, char_h))
+    char_h = font_size
     image = Image.new("1", (char_w, char_h), color=0)
 
     # draw text to image
@@ -67,9 +59,19 @@ def orderChars(chars, font_path=None):
     chars - string of characters to order
     font_path - path to the font to be used (default: SFMono-Medium)
     """
+
+    font_path = font_path or "../fonts/SFMono-Medium.otf"
+    try:
+        font = ImageFont.truetype(font_path, size=200)
+        font_size = font.getsize(ascii_chars)[1]
+    except IOError:
+        font = ImageFont.load_default()
+        font_size = font.getsize(ascii_chars)[1]
+        print("Warning: Could not use chosen font. Using default.")
+
     char_dict = []
     for c in chars:
-        density = getCharDensity(c, font_path)
+        density = getCharDensity(c, font, font_size)
         char_dict.append((c, density))
 
     char_dict.sort(key=lambda x: x[1], reverse=True)
