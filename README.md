@@ -121,9 +121,9 @@ Optional Arguments:
 ## Examples
 
 ```
-python3 ascii.py -c klimt_woman.jpg
+python3 ascii.py -c stary_night.jpg
 ```
-[![ASCIICSA][klimt]]
+<img src="resources/images/stary_night_ansi16.png"/>
 
 <!-- LICENSE -->
 ## License
@@ -148,4 +148,4 @@ Project Link: [https://github.com/ArianOmidi/ASCIICSA](https://github.com/ArianO
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
 [product-screenshot]: resources/images/zebra_converted.png
-[klimt]: resources/images/klimt_ansii16.png
+[klimt]: resources/images/klimt_ansi16.png
