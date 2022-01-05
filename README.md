@@ -17,8 +17,11 @@ There are many image to ASCII converters avaliable but these projects were limit
 * Text
   * Select the font used by uploading font bitmap
   * Choose characters used 
-* Filters
+* Conversion
   * Add filters to get desired output
+  * Set sampling methods used
+  * Set size and resolution of output image
+  * Save raw ANSI text to textfile
 
 <!-- GETTING STARTED -->
 ## Getting Started
