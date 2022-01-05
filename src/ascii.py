@@ -302,8 +302,7 @@ def main():
     descStr = "This program converts an image into ASCII art."
     parser = argparse.ArgumentParser(description=descStr)
     # add expected arguments
-    parser.add_argument("filename")
-
+    parser.add_argument("filename", help="Path to image to be converted.")
     parser.add_argument(
         "-g",
         "--greyscale",
@@ -312,24 +311,76 @@ def main():
         type=int,
         const=8,
         default=8,
+        help="Select for greyscale image and pass number of shades used (defaults to true and 8 shades).",
     )
     parser.add_argument(
-        "-c", "--color", dest="colorScheme", type=int, nargs="?", const=16
+        "-c",
+        "--color",
+        dest="colorScheme",
+        type=int,
+        nargs="?",
+        const=16,
+        help="Select for colored image, use with --autoColor for best results (defaults to ANSI16 colors).",
     )
-    parser.add_argument("-a", "--autoColor", action="store_true")
-    parser.add_argument("-n", "--cols", type=int, default=120)
-    parser.add_argument("-l", "--scale", type=float, default=0.6)
-    parser.add_argument("-F", "--fontPath", required=False)
-    parser.add_argument("-t", "--chars", default=ascii_chars)
-    parser.add_argument("-i", "--invert", action="store_false")
-    parser.add_argument("-r", "--resolution", type=int, default=1920)
-    parser.add_argument("-f", "--constrastFactor", type=float, default=1.3)
+    parser.add_argument(
+        "-a",
+        "--autoColor",
+        action="store_true",
+        help="Sample color pallet from most prominent colors in the picture (defalut: 8 samples for grescale and 16 samples for color).",
+    )
+    parser.add_argument(
+        "-n",
+        "--cols",
+        type=int,
+        default=120,
+        help="The number of characters on the width of the output image (default: 120).",
+    )
+    parser.add_argument(
+        "-l",
+        "--scale",
+        type=float,
+        default=0.6,
+        help="The width-to-height ratio of the pixels sampled for each character (default: 0.6).",
+    )
+    parser.add_argument(
+        "-F",
+        "--fontPath",
+        required=False,
+        help="The path to the font to be used (default: SFMono-Medium).",
+    )
+    parser.add_argument(
+        "-t",
+        "--chars",
+        default=ascii_chars,
+        help="The ASCII characters to be used or select from presets: [printable, alphanumeric, alpha, numeric, lower, upper, tech, symbols] (default: printable)",
+    )
+    parser.add_argument(
+        "-i",
+        "--invert",
+        action="store_false",
+        help="Invert the output of the image (default: light characters on black background).",
+    )
+    parser.add_argument(
+        "-r",
+        "--resolution",
+        type=int,
+        default=1920,
+        help="The resolution of the output image (default: 1920)",
+    )
+    parser.add_argument(
+        "-f",
+        "--constrastFactor",
+        type=float,
+        default=1.3,
+        help="Contrast factor: <1 less contrast, 1 no change, >1 more contrast (default: 1.3).",
+    )
     parser.add_argument(
         "-T",
         "--sampling",
         type=str.lower,
         choices=["resize", "median", "mean"],
         default="resize",
+        help="The sampling method used: [resize, median, mean] (default: resize).",
     )
     parser.add_argument(
         "-C",
@@ -337,13 +388,34 @@ def main():
         type=str.lower,
         choices=["nearest", "fixed"],
         default="nearest",
+        help="The color selection method used: [nearest, fixed] (default: nearest).",
     )
 
-    parser.add_argument("-o", "--out", dest="outFile", required=False)
-    parser.add_argument("-O", "--imgout", dest="imgOutFile", required=False)
-    parser.add_argument("-H", "--hide", action="store_true")
-    parser.add_argument("-s", "--save", action="store_true")
-    parser.add_argument("-p", "--print", action="store_true")
+    parser.add_argument(
+        "-o", "--out", dest="outFile", required=False, help="Output text location."
+    )
+    parser.add_argument(
+        "-O",
+        "--imgout",
+        dest="imgOutFile",
+        required=False,
+        help="Output image location.",
+    )
+    parser.add_argument(
+        "-H",
+        "--hide",
+        action="store_true",
+        help="Do not open image after conversion (default: false).",
+    )
+    parser.add_argument(
+        "-s", "--save", action="store_true", help="Save ASCII image (default: false)."
+    )
+    parser.add_argument(
+        "-p",
+        "--print",
+        action="store_true",
+        help="Print ASCII text to output (default: false).",
+    )
 
     # --------------  PARSING ARGUMENTS -------------- #
     args = parser.parse_args()
