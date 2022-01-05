@@ -6,8 +6,7 @@
 There are many image to ASCII converters avaliable but these projects were limited and lacked the customization capabilities needed to create artistics images. 
 **ASCIICSA** - ***ACSII Computer Synthesized Art*** - can generate highly customizable ASCII art from an input image or video. Take a look at some of the results and even try it out to create your own ASCII art! 
 
-<!-- [![ASCIICSA][product-screenshot]](https://example.com) -->
-![flowers](https://user-images.githubusercontent.com/59782445/148183182-4881b9ec-5d11-4dda-bcff-e37b10c73e04.gif)
+<img src="resources/videos/flowers6.gif"/>
 
 ### Customization Features:
 * Color Selection
@@ -48,18 +47,18 @@ To get a local copy up and running follow these simple example steps.
   python ascii.py /path/to/image
 ```
 <img src="resources/images/zebra_converted.png"/>
-  
-### Convert an image to animated ASCII image
-```sh
-  python ascii_animation.py /path/to/image
-```
-<img width=500 src="resources/videos/girl.gif"/>
 
 ### Convert an image to ASCII video
 ```sh
   python ascii_video.py /path/to/video
 ```
-![flowers3](https://user-images.githubusercontent.com/59782445/148185944-9aa4ec1a-07e0-435f-b0c8-190f9028f5dc.gif)
+<img src="resources/videos/flowers5.gif"/>
+
+### Convert an image to animated ASCII image
+```sh
+  python ascii_animation.py /path/to/image
+```
+<img width=500 src="resources/videos/girl.gif"/>
 
 ### Customization Parameters
 ```
@@ -99,14 +98,14 @@ Optional Arguments:
 ## Examples
 
 ```sh
-python3 ascii.py -n 160 woman.jpg    # more characters
-```
-<img src="resources/images/sof.png"/>
-
-```sh
 python3 ascii.py -ac stary_night.jpg    # auto color
 ```
 <img src="resources/images/stary_night.png"/>
+
+```sh
+python3 ascii.py -n 160 woman.jpg    # more characters
+```
+<img src="resources/images/sof.png"/>
 
 ***For more examples see the `./resources/` folder.***
 
