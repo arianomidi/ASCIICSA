@@ -34,6 +34,119 @@ std_rgb = [
     "#eeeeec",
 ]
 
+# Ubuntu default ANSI color scheme
+# red_rgb = [
+#     "#ffffff",
+#     "#fff0f0",
+#     "#ffbfbf",
+#     "#ff8f8f",
+#     "#ff6a6a",
+#     "#ff4d4d",
+#     "#ff3838",
+#     "#ff1c1c",
+#     "#ff0000",
+#     "#c80000",
+#     "#960000",
+#     "#640000",
+#     "#460000",
+#     "#1e0000",
+#     "#f0fff0",
+#     "#bfffbf",
+#     "#8fff8f",
+#     "#6aff6a",
+#     "#4dff4d",
+#     "#38ff38",
+#     "#1cff1c",
+#     "#00ff00",
+#     "#00c800",
+#     "#009600",
+#     "#006400",
+#     "#004600",
+#     "#001e00",
+#     "#f0f0ff",
+#     "#bfbfff",
+#     "#8f8fff",
+#     "#6a6aff",
+#     "#4d4dff",
+#     "#3838ff",
+#     "#1c1cff",
+#     "#0000ff",
+#     "#0000c8",
+#     "#000096",
+#     "#000064",
+#     "#000046",
+#     "#00001e",
+#     "#000000",
+# ]
+
+# palatte = [
+#     "#000000",
+#     "#1d3461",
+#     "#1f487e",
+#     "#376996",
+#     "#6290c8",
+#     "#829cbc",
+#     "#ffffff",
+# ]
+
+palatte = [
+    "#000000",
+    "#ffdbeb",
+    "#ffb2d4",
+    "#f76cae",
+    "#f72585",
+    "#b5179e",
+    "#7209b7",
+    "#560bad",
+    "#03045e",
+    "#00013c",
+    "#3a0ca3",
+    "#3f37c9",
+    "#4361ee",
+    "#4895ef",
+    "#4cc9f0",
+    "#95e6ff",
+    "#caf3ff",
+    "#ffffff",
+]
+
+# palatte = [
+#     "#000000",
+#     "#184e77",
+#     "#1e6091",
+#     "#1a759f",
+#     "#168aad",
+#     "#34a0a4",
+#     "#52b69a",
+#     "#76c893",
+#     "#99d98c",
+#     "#b5e48c",
+#     "#d9ed92",
+#     "#ffffff",
+# ]
+
+# palatte = [
+#     "#000000",
+#     "#10002b",
+#     "#240046",
+#     "#3c096c",
+#     "#5a189a",
+#     "#7400b8",
+#     "#6930c3",
+#     "#5e60ce",
+#     "#5390d9",
+#     "#4ea8de",
+#     "#48bfe3",
+#     "#56cfe1",
+#     "#64dfdf",
+#     "#72efdd",
+#     "#80ffdb",
+#     "#aaffe7",
+#     "#cafff2",
+#     "#ffffff",
+# ]
+
+
 # ======================  COLOR CONVERSIONS ====================== #
 
 
@@ -102,6 +215,19 @@ def ansi8_rgb():
 def ansi16_rgb():
     """Return the standard 4 bit ANSI color palatte"""
     ansi16_hex = std_rgb[0:16]
+    ansi16_rgb = []
+
+    for hex in ansi16_hex:
+        hex_code = hex.lstrip("#")
+        rgb = tuple(int(hex_code[2 * i : 2 * i + 2], 16) for i in range(3))
+        ansi16_rgb.append(rgb)
+
+    return ansi16_rgb
+
+
+def color_rgb():
+    """Return the standard 4 bit ANSI color palatte"""
+    ansi16_hex = palatte
     ansi16_rgb = []
 
     for hex in ansi16_hex:

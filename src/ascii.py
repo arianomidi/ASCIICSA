@@ -19,6 +19,9 @@ from skimage.transform import downscale_local_mean
 from color import *
 from char_density import *
 
+from math import sqrt
+import colorsys
+
 # sampling methods
 OPENCV_RESIZE = 0
 BLOCK_REDUCE = 1
@@ -58,7 +61,7 @@ def filterImage(image, factor, type=CONTRAST):
 
 def defaultPalatte(shadeCount=8, isColor=False):
     if isColor:
-        palatte = ansi16_rgb()
+        palatte = color_rgb()  # TODO: ansi16_rgb
     else:
         if shadeCount == 1:
             return [(255, 255, 255)]
@@ -99,6 +102,36 @@ def normalizeTiles(tiles):
 
 
 # ======================  ASCII CONVERSION METHODS  ====================== #
+def step(r, g, b, repetitions=1):
+    lum = sqrt(0.241 * (r) + 0.691 * g + 0.068 * b)
+    h, s, v = colorsys.rgb_to_hsv(r, g, b)
+    h2 = int(h * repetitions)
+    lum2 = int(lum * repetitions)
+    v2 = int(v * repetitions)
+    return (h2, lum, v2)
+
+
+def relativeLuminance(r, g, b):
+    r_norm = r / 255
+    g_norm = g / 255
+    b_norm = b / 255
+
+    if r_norm <= 0.03928:
+        r_out = r_norm / 12.92
+    else:
+        r_out = ((r_norm + 0.055) / 1.055) ** 2.4
+
+    if g_norm <= 0.03928:
+        g_out = g_norm / 12.92
+    else:
+        g_out = ((g_norm + 0.055) / 1.055) ** 2.4
+
+    if b_norm <= 0.03928:
+        b_out = b_norm / 12.92
+    else:
+        b_out = ((b_norm + 0.055) / 1.055) ** 2.4
+
+    return 0.2126 * r_out + 0.7152 * g_out + 0.0722 * b_out
 
 
 def covertImageToAscii(
@@ -168,9 +201,19 @@ def covertImageToAscii(
         color_palette = np.asarray(colors)
     else:
         colors.sort(
-            key=lambda rgb: (0.299 * rgb[0] + 0.587 * rgb[1] + 0.114 * rgb[2]),
+            key=lambda rgb: relativeLuminance(*rgb),  # relative luminance
+            # key=lambda rgb: (
+            #     sqrt(
+            #         0.299 * (rgb[0] ** 2)
+            #         + 0.587 * (rgb[1] ** 2)
+            #         + 0.114 * (rgb[2] ** 2)
+            #     )
+            # ),  # HSP Color Model
             reverse=invert,
         )
+        # colors.sort(key=lambda rgb: colorsys.rgb_to_hls(*rgb))
+        # colors.sort(key=lambda rgb: step(*rgb, 8), reverse=invert)  # rainbow inverse
+        # colors.sort(key=lambda rgb: step(*rgb, 8))  # rainbow
 
     # ascii image is a list of character strings
     aimg = []
