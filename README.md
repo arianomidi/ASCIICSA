@@ -6,8 +6,7 @@
 There are many image to ASCII converters avaliable but these projects were limited and lacked the customization capabilities needed to create artistics images. 
 **ASCIICSA** - ***ACSII Computer Synthesized Art*** - can generate highly customizable ASCII art from an input image or video. Take a look at some of the results and even try it out to create your own ASCII art! 
 
-<!-- [![ASCIICSA][product-screenshot]](https://example.com) -->
-![flowers](https://user-images.githubusercontent.com/59782445/148183182-4881b9ec-5d11-4dda-bcff-e37b10c73e04.gif)
+<img src="resources/videos/flowers6.gif"/>
 
 ### Customization Features:
 * Color Selection
@@ -48,65 +47,72 @@ To get a local copy up and running follow these simple example steps.
   python ascii.py /path/to/image
 ```
 <img src="resources/images/zebra_converted.png"/>
-  
+
+### Convert an image to ASCII video
+```sh
+  python ascii_video.py /path/to/video
+```
+<img src="resources/videos/flowers5.gif"/>
+
 ### Convert an image to animated ASCII image
 ```sh
   python ascii_animation.py /path/to/image
 ```
 <img width=500 src="resources/videos/girl.gif"/>
 
-### Convert an image to ASCII video
-```sh
-  python ascii_video.py /path/to/video
-```
-![flowers3](https://user-images.githubusercontent.com/59782445/148185944-9aa4ec1a-07e0-435f-b0c8-190f9028f5dc.gif)
-
 ### Customization Parameters
 ```
-Optional Arguments:
-
-  -g [GREYSCALESCHEME], --greyscale [GREYSCALESCHEME]
-                        Select for greyscale image and pass number of shades used (defaults to true and 8 shades).
-  -c [COLORSCHEME], --color [COLORSCHEME]
-                        Select for colored image, use with --autoColor for best results (defaults to ANSI16 colors).
-  -a, --autoColor       Sample color pallet from most prominent colors in the picture (defalut: 8 samples for grescale and 16 samples for color).
+MISC:
+  -h, --help            show this help message and exit
+  
+COLOR SELECTION:
+  -g, --greyscale       Select for greyscale image and pass number of shades used (defaults to true and 8 shades).
+  -gs GREYSCALESAMPLES, --greyscaleSamples GREYSCALESAMPLES
+                        Number of samples in palette when in greyscale mode (defalut: 8).
+  -c [{ansi8,ansi16,rgb,rb,gb,b}], --colorPalatte [{ansi8,ansi16,rgb,rb,gb,b}]
+                        Select color palatte used to for colored image (default: ansi16).
+  -C {nearest,fixed}, --colorSelection {nearest,fixed}
+                        The color selection method used: [nearest, fixed] (default: nearest).
+  -a [AUTOCOLOR], --autoColor [AUTOCOLOR]
+                        Size of sampled color palette from the most prominent colors in the picture (defalut: 16).
+  -i, --invert          Invert the output of the image (default: light characters on black background).
+  
+ASCII SAMPLING:
   -n COLS, --cols COLS  The number of characters on the width of the output image (default: 120).
   -l SCALE, --scale SCALE
                         The width-to-height ratio of the pixels sampled for each character (default: 0.6).
-  -F FONTPATH, --fontPath FONTPATH
-                        The path to the font to be used (default: SFMono-Medium).
   -t CHARS, --chars CHARS
-                        The ASCII characters to be used or select from presets: [printable, alphanumeric, alpha, numeric, lower, upper, tech, symbols]
-                        (default: printable)
-  -i, --invert          Invert the output of the image (default: light characters on black background).
-  -r RESOLUTION, --resolution RESOLUTION
-                        The resolution of the output image (default: 1920)
+                        The ASCII characters to be used or select from presets: [printable, alphanumeric, alpha,
+                        numeric, lower, upper, tech, symbols] (default: printable)
   -f CONSTRASTFACTOR, --constrastFactor CONSTRASTFACTOR
                         Contrast factor: <1 less contrast, 1 no change, >1 more contrast (default: 1.3).
   -T {resize,median,mean}, --sampling {resize,median,mean}
                         The sampling method used: [resize, median, mean] (default: resize).
-  -C {nearest,fixed}, --colorSelection {nearest,fixed}
-                        The color selection method used: [nearest, fixed] (default: nearest).
-  -o OUTFILE, --out OUTFILE
+  -F FONTPATH, --fontPath FONTPATH
+                        The path to the font to be used (default: SFMono-Medium).
+
+OUTPUT:
+  -r RESOLUTION, --resolution RESOLUTION
+                        The resolution of the output image (default: 1920)
+  -S [SAVE], --save [SAVE]
+                        Save ASCII image as inputed path (default: '../out/<filename>_ascii.png').
+  -O OUTFILE, --out OUTFILE
                         Output text location.
-  -O IMGOUTFILE, --imgout IMGOUTFILE
-                        Output image location.
   -H, --hide            Do not open image after conversion (default: false).
-  -s, --save            Save ASCII image (default: false).
-  -p, --print           Print ASCII text to output (default: false).
+  -P, --print           Print ASCII text to output (default: false).
 ```
 
 ## Examples
 
 ```sh
-python3 ascii.py -n 160 woman.jpg    # more characters
-```
-<img src="resources/images/sof.png"/>
-
-```sh
 python3 ascii.py -ac stary_night.jpg    # auto color
 ```
 <img src="resources/images/stary_night.png"/>
+
+```sh
+python3 ascii.py -n 160 woman.jpg    # more characters
+```
+<img src="resources/images/sof.png"/>
 
 ***For more examples see the `./resources/` folder.***
 
