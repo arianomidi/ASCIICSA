@@ -62,37 +62,44 @@ To get a local copy up and running follow these simple example steps.
 
 ### Customization Parameters
 ```
-Optional Arguments:
-
-  -g [GREYSCALESCHEME], --greyscale [GREYSCALESCHEME]
-                        Select for greyscale image and pass number of shades used (defaults to true and 8 shades).
-  -c [COLORSCHEME], --color [COLORSCHEME]
-                        Select for colored image, use with --autoColor for best results (defaults to ANSI16 colors).
-  -a, --autoColor       Sample color pallet from most prominent colors in the picture (defalut: 8 samples for grescale and 16 samples for color).
+MISC:
+  -h, --help            show this help message and exit
+  
+COLOR SELECTION:
+  -g, --greyscale       Select for greyscale image and pass number of shades used (defaults to true and 8 shades).
+  -gs GREYSCALESAMPLES, --greyscaleSamples GREYSCALESAMPLES
+                        Number of samples in palette when in greyscale mode (defalut: 8).
+  -c [{ansi8,ansi16,rgb,rb,gb,b}], --colorPalatte [{ansi8,ansi16,rgb,rb,gb,b}]
+                        Select color palatte used to for colored image (default: ansi16).
+  -C {nearest,fixed}, --colorSelection {nearest,fixed}
+                        The color selection method used: [nearest, fixed] (default: nearest).
+  -a [AUTOCOLOR], --autoColor [AUTOCOLOR]
+                        Size of sampled color palette from the most prominent colors in the picture (defalut: 16).
+  -i, --invert          Invert the output of the image (default: light characters on black background).
+  
+ASCII SAMPLING:
   -n COLS, --cols COLS  The number of characters on the width of the output image (default: 120).
   -l SCALE, --scale SCALE
                         The width-to-height ratio of the pixels sampled for each character (default: 0.6).
-  -F FONTPATH, --fontPath FONTPATH
-                        The path to the font to be used (default: SFMono-Medium).
   -t CHARS, --chars CHARS
-                        The ASCII characters to be used or select from presets: [printable, alphanumeric, alpha, numeric, lower, upper, tech, symbols]
-                        (default: printable)
-  -i, --invert          Invert the output of the image (default: light characters on black background).
-  -r RESOLUTION, --resolution RESOLUTION
-                        The resolution of the output image (default: 1920)
+                        The ASCII characters to be used or select from presets: [printable, alphanumeric, alpha,
+                        numeric, lower, upper, tech, symbols] (default: printable)
   -f CONSTRASTFACTOR, --constrastFactor CONSTRASTFACTOR
                         Contrast factor: <1 less contrast, 1 no change, >1 more contrast (default: 1.3).
   -T {resize,median,mean}, --sampling {resize,median,mean}
                         The sampling method used: [resize, median, mean] (default: resize).
-  -C {nearest,fixed}, --colorSelection {nearest,fixed}
-                        The color selection method used: [nearest, fixed] (default: nearest).
-  -o OUTFILE, --out OUTFILE
+  -F FONTPATH, --fontPath FONTPATH
+                        The path to the font to be used (default: SFMono-Medium).
+
+OUTPUT:
+  -r RESOLUTION, --resolution RESOLUTION
+                        The resolution of the output image (default: 1920)
+  -S [SAVE], --save [SAVE]
+                        Save ASCII image as inputed path (default: '../out/<filename>_ascii.png').
+  -O OUTFILE, --out OUTFILE
                         Output text location.
-  -O IMGOUTFILE, --imgout IMGOUTFILE
-                        Output image location.
   -H, --hide            Do not open image after conversion (default: false).
-  -s, --save            Save ASCII image (default: false).
-  -p, --print           Print ASCII text to output (default: false).
+  -P, --print           Print ASCII text to output (default: false).
 ```
 
 ## Examples
