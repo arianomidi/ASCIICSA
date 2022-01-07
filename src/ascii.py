@@ -59,9 +59,9 @@ def filterImage(image, factor, type=CONTRAST):
     return enhancer.enhance(factor)
 
 
-def defaultPalatte(shadeCount=8, isColor=False):
-    if isColor:
-        palatte = color_rgb()  # TODO: ansi16_rgb
+def defaultPalatte(shadeCount=8, colorSceme=None):
+    if colorSceme:
+        palatte = palette_rgb(colorSceme)
     else:
         if shadeCount == 1:
             return [(255, 255, 255)]
@@ -346,31 +346,56 @@ def main():
     parser = argparse.ArgumentParser(description=descStr)
     # add expected arguments
     parser.add_argument("filename", help="Path to image to be converted.")
+
+    ### COLOR ARGS ###
+
     parser.add_argument(
         "-g",
         "--greyscale",
-        dest="greyscaleScheme",
-        nargs="?",
-        type=int,
-        const=8,
-        default=8,
+        action="store_true",
         help="Select for greyscale image and pass number of shades used (defaults to true and 8 shades).",
     )
     parser.add_argument(
-        "-c",
-        "--color",
-        dest="colorScheme",
+        "-gs",
+        "--greyscaleSamples",
         type=int,
+        default=8,
+        help="Number of samples in palette when in greyscale mode (defalut: 8).",
+    )
+    parser.add_argument(
+        "-c",
+        "--colorPalatte",
+        type=str.lower,
+        choices=["ansi8", "ansi16", "rgb", "rb", "gb", "b"],
+        const="ansi16",
         nargs="?",
-        const=16,
-        help="Select for colored image, use with --autoColor for best results (defaults to ANSI16 colors).",
+        help="Select color palatte used to for colored image (default: ansi16).",
+    )
+    parser.add_argument(
+        "-C",
+        "--colorSelection",
+        type=str.lower,
+        choices=["nearest", "fixed"],
+        default="nearest",
+        help="The color selection method used: [nearest, fixed] (default: nearest).",
     )
     parser.add_argument(
         "-a",
         "--autoColor",
-        action="store_true",
-        help="Sample color pallet from most prominent colors in the picture (defalut: 8 samples for grescale and 16 samples for color).",
+        nargs="?",
+        type=int,
+        const=16,
+        help="Size of sampled color palette from the most prominent colors in the picture (defalut: 16).",
     )
+    parser.add_argument(
+        "-i",
+        "--invert",
+        action="store_false",
+        help="Invert the output of the image (default: light characters on black background).",
+    )
+
+    ### ASCII SAMPLING ARGS ###
+
     parser.add_argument(
         "-n",
         "--cols",
@@ -386,29 +411,10 @@ def main():
         help="The width-to-height ratio of the pixels sampled for each character (default: 0.6).",
     )
     parser.add_argument(
-        "-F",
-        "--fontPath",
-        required=False,
-        help="The path to the font to be used (default: SFMono-Medium).",
-    )
-    parser.add_argument(
         "-t",
         "--chars",
         default=ascii_chars,
         help="The ASCII characters to be used or select from presets: [printable, alphanumeric, alpha, numeric, lower, upper, tech, symbols] (default: printable)",
-    )
-    parser.add_argument(
-        "-i",
-        "--invert",
-        action="store_false",
-        help="Invert the output of the image (default: light characters on black background).",
-    )
-    parser.add_argument(
-        "-r",
-        "--resolution",
-        type=int,
-        default=1920,
-        help="The resolution of the output image (default: 1920)",
     )
     parser.add_argument(
         "-f",
@@ -417,6 +423,7 @@ def main():
         default=1.3,
         help="Contrast factor: <1 less contrast, 1 no change, >1 more contrast (default: 1.3).",
     )
+
     parser.add_argument(
         "-T",
         "--sampling",
@@ -426,38 +433,42 @@ def main():
         help="The sampling method used: [resize, median, mean] (default: resize).",
     )
     parser.add_argument(
-        "-C",
-        "--colorSelection",
-        type=str.lower,
-        choices=["nearest", "fixed"],
-        default="nearest",
-        help="The color selection method used: [nearest, fixed] (default: nearest).",
+        "-F",
+        "--fontPath",
+        required=False,
+        help="The path to the font to be used (default: SFMono-Medium).",
     )
 
+    ### OUTPUT ARGS ###
+
     parser.add_argument(
-        "-o", "--out", dest="outFile", required=False, help="Output text location."
+        "-r",
+        "--resolution",
+        type=int,
+        default=1920,
+        help="The resolution of the output image (default: 1920)",
     )
     parser.add_argument(
-        "-O",
-        "--imgout",
-        dest="imgOutFile",
-        required=False,
-        help="Output image location.",
+        "-S",
+        "--save",
+        nargs="?",
+        const="",
+        help="Save ASCII image as inputed path (default: '../out/<filename>_ascii.png').",
+    )
+    parser.add_argument(
+        "-O", "--out", dest="outFile", required=False, help="Output text location."
+    )
+    parser.add_argument(
+        "-P",
+        "--print",
+        action="store_true",
+        help="Print ASCII text to output (default: false).",
     )
     parser.add_argument(
         "-H",
         "--hide",
         action="store_true",
         help="Do not open image after conversion (default: false).",
-    )
-    parser.add_argument(
-        "-s", "--save", action="store_true", help="Save ASCII image (default: false)."
-    )
-    parser.add_argument(
-        "-p",
-        "--print",
-        action="store_true",
-        help="Print ASCII text to output (default: false).",
     )
 
     # --------------  PARSING ARGUMENTS -------------- #
@@ -478,9 +489,13 @@ def main():
         outFile = args.outFile
 
     # set img output file
-    imgOutFile = Path("../out/{}_ascii.png".format(filename.stem))
-    if args.imgOutFile:
-        imgOutFile = Path(args.imgOutFile)
+    saveOutput = False
+    if args.save == "":
+        imgOutFile = Path("../out/{}_ascii.png".format(filename.stem))
+        saveOutput = True
+    elif args.save:
+        imgOutFile = Path(args.save)
+        saveOutput = True
 
     # verify font path
     fontPath = args.fontPath
@@ -534,11 +549,10 @@ def main():
 
     # set color scheme
     if args.autoColor:
-        num_of_colors = args.colorScheme or args.greyscaleScheme
-        is_greyscale = args.colorScheme == None
-        colors = autoColor(image, num_of_colors, greyscale=is_greyscale)
+        num_of_colors = args.autoColor
+        colors = autoColor(image, num_of_colors, greyscale=args.greyscale)
     else:
-        colors = defaultPalatte(args.greyscaleScheme, isColor=args.colorScheme)
+        colors = defaultPalatte(args.samples, args.colorPalatte)
 
     # --------------  GENERATE ASCII ART -------------- #
 
@@ -578,7 +592,7 @@ def main():
         f.close()
 
     # save/show the image
-    if args.save or args.imgOutFile:
+    if saveOutput:
         # Confirm if about to overwrite a file
         if imgOutFile.is_file():
             response = input(

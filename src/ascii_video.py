@@ -411,7 +411,7 @@ def main():
         colors = frameAutoColor(sample_frame)
     else:
         if args.colorScheme:
-            colors = ansi16_rgb()
+            colors = palette_rgb("ansi16")
         else:
             colors = []
             for i in range(args.greyscaleScheme):

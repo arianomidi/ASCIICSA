@@ -13,7 +13,7 @@ import cv2
 from collections import Counter
 
 # Ubuntu default ANSI color scheme
-std_rgb = [
+ansi_palatte = [
     "#2e3436",
     "#cc0000",
     "#4e9a06",
@@ -34,62 +34,27 @@ std_rgb = [
     "#eeeeec",
 ]
 
-# Ubuntu default ANSI color scheme
-# red_rgb = [
-#     "#ffffff",
-#     "#fff0f0",
-#     "#ffbfbf",
-#     "#ff8f8f",
-#     "#ff6a6a",
-#     "#ff4d4d",
-#     "#ff3838",
-#     "#ff1c1c",
-#     "#ff0000",
-#     "#c80000",
-#     "#960000",
-#     "#640000",
-#     "#460000",
-#     "#1e0000",
-#     "#f0fff0",
-#     "#bfffbf",
-#     "#8fff8f",
-#     "#6aff6a",
-#     "#4dff4d",
-#     "#38ff38",
-#     "#1cff1c",
-#     "#00ff00",
-#     "#00c800",
-#     "#009600",
-#     "#006400",
-#     "#004600",
-#     "#001e00",
-#     "#f0f0ff",
-#     "#bfbfff",
-#     "#8f8fff",
-#     "#6a6aff",
-#     "#4d4dff",
-#     "#3838ff",
-#     "#1c1cff",
-#     "#0000ff",
-#     "#0000c8",
-#     "#000096",
-#     "#000064",
-#     "#000046",
-#     "#00001e",
-#     "#000000",
-# ]
+rgb_palatte = [
+    "#ffffff",
+    "#ff8f8f",
+    "#ff3838",
+    "#960000",
+    "#460000",
+    "#bfffbf",
+    "#6aff6a",
+    "#00ff00",
+    "#009600",
+    "#004600",
+    "#bfbfff",
+    "#6a6aff",
+    "#3838ff",
+    "#0000ff",
+    "#000096",
+    "#000046",
+    "#000000",
+]
 
-# palatte = [
-#     "#000000",
-#     "#1d3461",
-#     "#1f487e",
-#     "#376996",
-#     "#6290c8",
-#     "#829cbc",
-#     "#ffffff",
-# ]
-
-palatte = [
+rb_palatte = [
     "#000000",
     "#ffdbeb",
     "#ffb2d4",
@@ -110,41 +75,41 @@ palatte = [
     "#ffffff",
 ]
 
-# palatte = [
-#     "#000000",
-#     "#184e77",
-#     "#1e6091",
-#     "#1a759f",
-#     "#168aad",
-#     "#34a0a4",
-#     "#52b69a",
-#     "#76c893",
-#     "#99d98c",
-#     "#b5e48c",
-#     "#d9ed92",
-#     "#ffffff",
-# ]
+gb_palatte = [
+    "#000000",
+    "#184e77",
+    "#1e6091",
+    "#1a759f",
+    "#168aad",
+    "#34a0a4",
+    "#52b69a",
+    "#76c893",
+    "#99d98c",
+    "#b5e48c",
+    "#d9ed92",
+    "#ffffff",
+]
 
-# palatte = [
-#     "#000000",
-#     "#10002b",
-#     "#240046",
-#     "#3c096c",
-#     "#5a189a",
-#     "#7400b8",
-#     "#6930c3",
-#     "#5e60ce",
-#     "#5390d9",
-#     "#4ea8de",
-#     "#48bfe3",
-#     "#56cfe1",
-#     "#64dfdf",
-#     "#72efdd",
-#     "#80ffdb",
-#     "#aaffe7",
-#     "#cafff2",
-#     "#ffffff",
-# ]
+b_palatte = [
+    "#000000",
+    "#10002b",
+    "#240046",
+    "#3c096c",
+    "#5a189a",
+    "#7400b8",
+    "#6930c3",
+    "#5e60ce",
+    "#5390d9",
+    "#4ea8de",
+    "#48bfe3",
+    "#56cfe1",
+    "#64dfdf",
+    "#72efdd",
+    "#80ffdb",
+    "#aaffe7",
+    "#cafff2",
+    "#ffffff",
+]
 
 
 # ======================  COLOR CONVERSIONS ====================== #
@@ -199,43 +164,29 @@ def HEX2ANSI256(hex):
 # ======================  ANSI METHODS ====================== #
 
 
-def ansi8_rgb():
-    """Return the standard 3 bit ANSI color palatte"""
-    ansi8_hex = std_rgb[0:8]
-    ansi8_rgb = []
+def palette_rgb(colorSceme="ansi16"):
+    """Return the selected color palatte (defalut: standard 4 bit ANSI)"""
+    if colorSceme == "ansi8":
+        palatte_hex = ansi_palatte[0:8]
+    elif colorSceme == "ansi16":
+        palatte_hex = ansi_palatte[0:16]
+    elif colorSceme == "rgb":
+        palatte_hex = rgb_palatte
+    elif colorSceme == "rb":
+        palatte_hex = rb_palatte
+    elif colorSceme == "gb":
+        palatte_hex = gb_palatte
+    elif colorSceme == "b":
+        palatte_hex = b_palatte
 
-    for hex in ansi8_hex:
+    palatte_rgb = []
+
+    for hex in palatte_hex:
         hex_code = hex.lstrip("#")
         rgb = tuple(int(hex_code[2 * i : 2 * i + 2], 16) for i in range(3))
-        ansi8_rgb.append(rgb)
+        palatte_rgb.append(rgb)
 
-    return ansi8_rgb
-
-
-def ansi16_rgb():
-    """Return the standard 4 bit ANSI color palatte"""
-    ansi16_hex = std_rgb[0:16]
-    ansi16_rgb = []
-
-    for hex in ansi16_hex:
-        hex_code = hex.lstrip("#")
-        rgb = tuple(int(hex_code[2 * i : 2 * i + 2], 16) for i in range(3))
-        ansi16_rgb.append(rgb)
-
-    return ansi16_rgb
-
-
-def color_rgb():
-    """Return the standard 4 bit ANSI color palatte"""
-    ansi16_hex = palatte
-    ansi16_rgb = []
-
-    for hex in ansi16_hex:
-        hex_code = hex.lstrip("#")
-        rgb = tuple(int(hex_code[2 * i : 2 * i + 2], 16) for i in range(3))
-        ansi16_rgb.append(rgb)
-
-    return ansi16_rgb
+    return palatte_rgb
 
 
 def parse_ansi(ansi):
@@ -268,7 +219,7 @@ def ANSI2RGB(ansi):
     if ansi < 0 or ansi > 255:
         return "#000000"
     if ansi < 16:
-        return std_rgb[ansi]
+        return ansi_palatte[ansi]
 
     if ansi > 231:
         s = (ansi - 232) * 10 + 8
@@ -289,9 +240,9 @@ def ANSI2RGB(ansi):
 def background_color(inverted):
     """Return background color based on if the image is inverted"""
     if inverted:
-        return std_rgb[16]
+        return ansi_palatte[16]
     else:
-        return std_rgb[17]
+        return ansi_palatte[17]
 
 
 # ======================  COLOR SAMPLING METHODS  ====================== #
