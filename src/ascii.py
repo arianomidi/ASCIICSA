@@ -552,7 +552,7 @@ def main():
         num_of_colors = args.autoColor
         colors = autoColor(image, num_of_colors, greyscale=args.greyscale)
     else:
-        colors = defaultPalatte(args.samples, args.colorPalatte)
+        colors = defaultPalatte(args.greyscaleSamples, args.colorPalatte)
 
     # --------------  GENERATE ASCII ART -------------- #
 
