@@ -105,9 +105,24 @@ OUTPUT:
 ## Examples
 
 ```sh
-python3 ascii.py -ac stary_night.jpg    # auto color
+python3 ascii.py -a stary_night.jpg    # auto color
 ```
 <img src="resources/images/stary_night.png"/>
+
+```sh
+python3 ascii.py -n 80 -c rb -t symbols stary_night.jpg   # something funky
+```
+<img src="resources/images/stary_night_extreme.png"/>
+
+```sh
+python3 ascii.py -c b woman.jpg    # blue colour palatte
+```
+<img src="resources/images/woman-blue.png"/>
+
+```sh
+python3 ascii.py -c rb bill-evans.jpg    # red-blue colour palatte
+```
+<img src="resources/images/eyes-chroma.png"/>
 
 ```sh
 python3 ascii.py -n 160 woman.jpg    # more characters
