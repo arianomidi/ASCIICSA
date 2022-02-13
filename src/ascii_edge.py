@@ -1,6 +1,10 @@
 from PIL import Image, ImageFont, ImageDraw
 import numpy as np
+import cv2
 import string
+
+img_path = "./data/zebra.png"
+kernel_size = 5
 
 chars = " .,<>[]()\\!|/[]"
 charsTest = "?{|"
@@ -33,4 +37,16 @@ def getCharImages(chars, font_path=None):
     return np.array(charImgs)
 
 
-print(getCharImages(charsTest))
+def detectEdges():
+    img = cv2.imread(img_path, 0)
+
+    blur_img = cv2.GaussianBlur(img, (kernel_size, kernel_size), 0)
+    sobel_img = cv2.Sobel(
+        src=blur_img, ddepth=cv2.CV_64F, dx=1, dy=1, ksize=3
+    )  # Combined X and Y Sobel Edge Detection
+
+    cv2.imshow("OpenCV Image Reading", sobel_img)
+    cv2.waitKey(0)
+
+
+detectEdges()
