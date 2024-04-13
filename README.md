@@ -29,12 +29,15 @@ This is an example of how you may give instructions on setting up your project l
 To get a local copy up and running follow these simple example steps.
 
 ### Installation
-
 1. Clone the repo
    ```sh
    git clone https://github.com/ArianOmidi/ASCIICSA.git
    ```
-2. Install project dependencies
+2. Ensure `python>=3.9`
+   ```sh
+   python --version
+   ```
+3. Install project dependencies
    ```sh
    pip install -r requirements.txt
    ```
@@ -44,23 +47,23 @@ To get a local copy up and running follow these simple example steps.
 
 ### Convert an image to ASCII image
 ```sh
-  python ascii.py /path/to/image
+  python src/ascii.py /path/to/image
 ```
 <img src="resources/images/zebra_converted.png"/>
 
 ### Convert an image to ASCII video
 ```sh
-  python ascii_video.py /path/to/video
+  python src/ascii_video.py /path/to/video
 ```
 <img src="resources/videos/flowers5.gif"/>
 
 ### Convert an image to animated ASCII image
 ```sh
-  python ascii_animation.py /path/to/image
+  python src/ascii_animation.py /path/to/image
 ```
 <img width=500 src="resources/videos/girl.gif"/>
 
-### Customization Parameters
+### Image Customization Parameters
 ```
 MISC:
   -h, --help            show this help message and exit
@@ -95,37 +98,68 @@ OUTPUT:
   -r RESOLUTION, --resolution RESOLUTION
                         The resolution of the output image (default: 1920)
   -S [SAVE], --save [SAVE]
-                        Save ASCII image as inputed path (default: '../out/<filename>_ascii.png').
+                        Save ASCII image as inputed path (default: './out/<filename>_ascii.png').
   -O OUTFILE, --out OUTFILE
                         Output text location.
   -H, --hide            Do not open image after conversion (default: false).
   -P, --print           Print ASCII text to output (default: false).
 ```
+### Video Customization Parameters
+```
+MISC:
+  -h, --help            show this help message and exit
+  
+COLOR SELECTION:
+  -g [GREYSCALESCHEME], --greyscale [GREYSCALESCHEME]
+                        Select for greyscale image and specify number of shades (defaults to 8 when selected).
+  -a [AUTOCOLOR], --autoColor [AUTOCOLOR]
+                        Size of sampled color palette from the most prominent colors in the picture (defalut: 16).
+  -R [COLORSAMPLERATE], --colorSampleRate [COLORSAMPLERATE]
+                        When autocolor is selected, number of frames between color sampling (defaults to 1)
+  -i, --invert          Invert the output of the image (default: light characters on black background).
+  
+ASCII SAMPLING:
+  -n COLS, --cols COLS  The number of characters on the width of the output image (default: 120).
+  -l SCALE, --scale SCALE
+                        The width-to-height ratio of the pixels sampled for each character (default: 0.6).
+  -t CHARS, --chars CHARS
+                        The ASCII characters to be used or select from presets: [printable, alphanumeric, alpha,
+                        numeric, lower, upper, tech, symbols] (default: printable)
+
+OUTPUT:
+  -r FPS, --fps FPS     The fps of output video. (default: match input video)
+  -r RESOLUTION, --resolution RESOLUTION
+                        The resolution of the output image (default: 1920)
+  -O OUTFILE, --out OUTFILE
+                        Output text location.
+  -H, --hide            Do not open image after conversion (default: false).
+  -T, --test            Test settings before video generation (default: false).
+```
 
 ## Examples
 
 ```sh
-python3 ascii.py -a stary_night.jpg    # auto color
+python3 src/ascii.py -a 16 stary_night.jpg # auto color
 ```
 <img src="resources/images/stary_night.png"/>
 
 ```sh
-python3 ascii.py -n 80 -c rb -t symbols stary_night.jpg   # something funky
+python3 src/ascii.py -n 80 -c rb -t symbols stary_night.jpg   # something funky
 ```
 <img src="resources/images/stary_night_extreme.png"/>
 
 ```sh
-python3 ascii.py -c b woman.jpg    # blue colour palatte
+python3 src/ascii.py -c b woman.jpg    # blue colour palatte
 ```
 <img src="resources/images/woman-blue.png"/>
 
 ```sh
-python3 ascii.py -c rb bill-evans.jpg    # red-blue colour palatte
+python3 src/ascii.py -c rb bill-evans.jpg    # red-blue colour palatte
 ```
 <img src="resources/images/eyes-chroma.png"/>
 
 ```sh
-python3 ascii.py -n 160 woman.jpg    # more characters
+python3 src/ascii.py -n 160 woman.jpg    # more characters
 ```
 <img src="resources/images/sof.png"/>
 
