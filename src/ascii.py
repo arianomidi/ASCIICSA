@@ -6,6 +6,7 @@ Email: arian.omidi@icloud.com
 GitHub: https://github.com/ArianOmidi
 Date: 2021-06-01
 """
+
 import os, sys, subprocess
 from pathlib import Path
 import argparse, time
@@ -259,9 +260,9 @@ def textToImage(aimg, cimg, inverted, size, bg_color=None, font_path=None):
 
     # choose a font
     if inverted:
-        default_font_path = "../fonts/SFMono-Medium.otf"
+        default_font_path = "./fonts/SFMono-Medium.otf"
     else:
-        default_font_path = "../fonts/SFMono-Heavy.otf"
+        default_font_path = "./fonts/SFMono-Heavy.otf"
     font_path = font_path or default_font_path
     font_size = round((3 / 4) * (2 * size[1] / len(aimg)))
     try:
@@ -271,7 +272,7 @@ def textToImage(aimg, cimg, inverted, size, bg_color=None, font_path=None):
         print("Warning: Could not use chosen font. Using default.")
 
     # char height is adjusted based on output size and col:row ratio
-    line_width = font.getsize("".join(aimg[0]))[0]  # get line width
+    line_width = font.getlength("".join(aimg[0]))  # get line width
     char_width = round(line_width / len(aimg[0]))
     char_height = round((size[1] / size[0]) * (line_width / len(aimg)))
 
@@ -353,7 +354,7 @@ def main():
         "-g",
         "--greyscale",
         action="store_true",
-        help="Select for greyscale image and pass number of shades used (defaults to true and 8 shades).",
+        help="Select for greyscale image (defaults to true).",
     )
     parser.add_argument(
         "-gs",
@@ -453,7 +454,7 @@ def main():
         "--save",
         nargs="?",
         const="",
-        help="Save ASCII image as inputed path (default: '../out/<filename>_ascii.png').",
+        help="Save ASCII image as inputed path (default: './out/<filename>_ascii.png').",
     )
     parser.add_argument(
         "-O", "--out", dest="outFile", required=False, help="Output text location."
@@ -491,7 +492,7 @@ def main():
     # set img output file
     saveOutput = False
     if args.save == "":
-        imgOutFile = Path("../out/{}_ascii.png".format(filename.stem))
+        imgOutFile = Path("./out/{}_ascii.png".format(filename.stem))
         saveOutput = True
     elif args.save:
         imgOutFile = Path(args.save)

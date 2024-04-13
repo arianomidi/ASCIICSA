@@ -6,6 +6,7 @@ Email: arian.omidi@icloud.com
 GitHub: https://github.com/ArianOmidi
 Date: 2021-06-01
 """
+
 import os, sys, subprocess
 from pathlib import Path
 from shutil import rmtree
@@ -37,22 +38,39 @@ def convertPIL2OpenCV(img_pil):
 
 def extractFrame(filename, out=None, loc=0.5):
     """
-    Extracts a frame from video.
+    Extracts a frame from a video at a specified location between start (0.0) and end (1.0).
 
-    arguments:
-    filename - name of source video
-    out - save location of the frame
-    loc - location of frame: 0 is the first frame and 1 is the last (default: 0.5)
+    Arguments:
+    filename - name of source video file.
+    out - file path where the extracted frame should be saved (optional).
+    loc - relative location in the video from where to extract the frame (default: 0.5, middle).
     """
     cam = cv2.VideoCapture(filename)
+    if not cam.isOpened():
+        raise ValueError("Unable to open video source: {}".format(filename))
+
+    total_frames = cam.get(cv2.CAP_PROP_FRAME_COUNT)
+    frame_index = int((total_frames - 1) * loc)
+
+    # Set the frame index
+    cam.set(cv2.CAP_PROP_POS_FRAMES, frame_index)
+
+    # Verify the frame index is set correctly
+    if cam.get(cv2.CAP_PROP_POS_FRAMES) != frame_index:
+        cam.release()
+        raise IOError("Failed to seek to frame index.")
 
     ret, frame = cam.read()
-    while cam.get(cv2.CAP_PROP_POS_AVI_RATIO) <= loc:
-        ret = cam.grab()
-        if ret:
-            ret, frame = cam.retrieve()
-        else:
-            break
+    if not ret:
+        cam.set(cv2.CAP_PROP_POS_FRAMES, 0)
+        ret, frame = cam.read()
+        for _ in range(1, frame_index + 1):
+            ret, new_frame = cam.read()
+
+            if not ret:
+                break
+
+            frame = new_frame
 
     if out:
         cv2.imwrite(out, frame)
@@ -298,15 +316,26 @@ def main():
         nargs="?",
         type=int,
         const=8,
-        default=8,
+        help="Select for greyscale image and specify number of shades (defaults to 8 when selected).",
     )
     parser.add_argument(
-        "-c", "--color", dest="colorScheme", type=int, nargs="?", const=16
+        "-a",
+        "--autoColor",
+        nargs="?",
+        type=int,
+        const=16,
+        help="Size of sampled color palette from the most prominent colors in the picture (defalut: 16).",
     )
-    parser.add_argument("-a", "--autoColor", action="store_true")
+
     parser.add_argument("-R", "--colorSampleRate", type=int, nargs="?", const=-1)
-    parser.add_argument("-n", "--cols", type=int, nargs="+", default=120)
-    parser.add_argument("-l", "--scale", type=float, default=0.6)
+    parser.add_argument("-n", "--cols", type=int, nargs="+", default=[120])
+    parser.add_argument(
+        "-l",
+        "--scale",
+        type=float,
+        default=0.6,
+        help="The width-to-height ratio of the pixels sampled for each character (default: 0.6).",
+    )
     parser.add_argument("-t", "--chars", default=ascii_chars)
     parser.add_argument("-i", "--invert", action="store_false")
     parser.add_argument("-f", "--fps", type=int, required=False)
@@ -328,7 +357,7 @@ def main():
         exit(0)
 
     # set text output file
-    outFile = Path("../out/video/{}_ascii.mp4".format(filename.stem))
+    outFile = Path("./out/video/{}_ascii.mp4".format(filename.stem))
     if args.outFile:
         outFile = Path(args.outFile)
 
@@ -337,8 +366,7 @@ def main():
     scale = args.scale
 
     # set cols
-    startCols = 120
-    endCols = 120
+    startCols = args.cols[0]
     if args.cols:
         startCols = int(args.cols[0])
         if len(args.cols) > 1:
@@ -401,8 +429,8 @@ def main():
     # set color scheme
     frameAutoColor = None
     if args.autoColor:
-        num_of_colors = args.colorScheme or args.greyscaleScheme
-        is_greyscale = args.colorScheme == None
+        num_of_colors = args.autoColor
+        is_greyscale = args.greyscaleScheme
         frameAutoColor = lambda frame: autoColor(
             frame, num_of_colors, greyscale=is_greyscale
         )
@@ -410,13 +438,13 @@ def main():
         sample_frame = convertOpenCV2PIL(extractFrame(str(filename))).convert("RGB")
         colors = frameAutoColor(sample_frame)
     else:
-        if args.colorScheme:
-            colors = palette_rgb("ansi16")
-        else:
+        if args.greyscaleScheme:
             colors = []
             for i in range(args.greyscaleScheme):
                 color = int(i * 255 / (args.greyscaleScheme - 1))
                 colors.append((color, color, color))
+        else:
+            colors = palette_rgb("ansi16")
 
     # --------------  TEST FRAMES (OPTIONAL) -------------- #
     if args.test:
